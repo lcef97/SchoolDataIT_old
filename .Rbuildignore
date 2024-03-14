@@ -1,0 +1,7 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+desktop\.ini$
+data/desktop\.ini$
+man/desktop\.ini$
+R/desktop\.ini$
+^\.github$
