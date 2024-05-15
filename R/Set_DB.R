@@ -50,19 +50,20 @@
 #' @param Date Character or Date. The threshold date to broadband activation to consider it activated for a school, i.e. the date before which the works of broadband activation must be finished in order to consider a school as provided with the broadband. By default, September 1st at the beginning of the school year.
 #' @param NA_autoRM Logical. Either \code{TRUE}, \code{FALSE} or \code{NULL}. If \code{TRUE}, the values missing in a single dataset are automatically deleted from the final DB. If \code{FALSE}, the missing observations are kept automatically. If \code{NULL}, the choice is left to the user by an interactive menu. \code{NULL} by default.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param show_col_types Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.
 #' @param input_Invalsi_IS Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
 #' If \code{INVALSI == TRUE}, the raw Invalsi survey data, obtained as output of the \code{\link{Get_Invalsi_IS}} function.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 #' \code{NULL} by default
 #' @param input_Registry Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
-#' The school registry corresponding to the year in scope, obtained as output of the function \code{\link{Get_Registry}}
+#' The school registry corresponding to the year in scope, obtained as output of the function \code{\link{Get_Registry}}.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 #' \code{NULL} by default
-#' @param input_SchoolBuildings Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}. If \code{SchoolBuildings == TRUE}, the raw school buildings dataset obtained as output of the function \code{\link{Get_DB_MIUR}}
-#' If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default
+#' @param input_SchoolBuildings Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}. If \code{SchoolBuildings == TRUE}, the raw school buildings dataset obtained as output of the function \code{\link{Get_DB_MIUR}}.
+#' If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default.
 #' @param input_nstud Object of class \code{list}, including two objects of class\code{tbl_df}, \code{tbl} and \code{data.frame}.
-#' If \code{nstud == TRUE}, the number of students by class, obtained as output of the \code{\link{Get_nstud}} function with the default \code{filename} parameter.
+#' If \code{nstud == TRUE}, the students and classes counts, obtained as output of the function \code{\link{Get_nstud}} with default \code{filename} parameter.
 #' If \code{NULL}, the function will download it automatically but it will not be saved in the global environment. \code{NULL} by default.
 #' @param input_School2mun Object of class \code{list} with elements of class \code{tbl_df}, \code{tbl} and \code{data.frame}
 #' If \code{nstud == TRUE}, the mapping from school codes to municipality (and province) codes. Needed only if \code{check == TRUE}, obtained as output of the function \code{\link{Get_School2mun}}.
@@ -97,25 +98,21 @@
 #' @examples
 #'
 #'
-#' data("example_input_DB23_MIUR")
-#' data("example_Invalsi23_prov")
-#' data("example_InnerAreas")
-#' data("example_input_nstud23")
-#' data("example_School2mun23")
-#' data("example_AdmUnNames20220630")
 #'
-#' Set_DB(Year = 2023, level = "NUTS-3",
+#' DB23_prov <- Set_DB(Year = 2023, level = "NUTS-3",Invalsi_grade = c(5, 8, 13),
+#'       Invalsi_subj = "Italian",nteachers = FALSE, BroadBand = FALSE,
+#'       SchoolBuildings_count_missing = FALSE,NA_autoRM= TRUE,
 #'       input_SchoolBuildings = example_input_DB23_MIUR[, -c(11:18, 10:27)],
 #'       input_Invalsi_IS = example_Invalsi23_prov,
 #'       input_nstud = example_input_nstud23,
 #'       input_InnerAreas = example_InnerAreas,
 #'       input_School2mun = example_School2mun23,
-#'       input_AdmUnNames = example_AdmUnNames20220630,
-#'       nteachers = FALSE, BroadBand = FALSE, Invalsi_grade = 5,
-#'       Invalsi_subj = "Italian",
-#'       SchoolBuildings_count_missing = FALSE,
-#'       NA_autoRM= TRUE)
+#'       input_AdmUnNames = example_AdmUnNames20220630)
 #'
+#'
+#' DB23_prov
+#'
+#' summary(DB23_prov[, -c(22:62)])
 #'
 #'
 #'
@@ -163,71 +160,226 @@ Set_DB <- function( Year = 2023,
                     input_teachers4student = NULL,
                     input_nteachers = NULL,
                     input_BroadBand = NULL,
-                    input_RiskMap = NULL ){
+                    input_RiskMap = NULL,
+                    autoAbort = FALSE){
 
   start.zero <- Sys.time()
   YearMinus1 <- as.numeric(substr(year.patternA(Year),1,4))
 
   datasets <- list()
 
-  if(is.null(input_Registry) &&
-     (is.null(input_School2mun) ||
-      (SchoolBuildings && is.null(input_SchoolBuildings)) ||
-      (nstud && is.null(input_nstud)))){
-    input_Registry <- Get_Registry(Year = Year, show_col_types = show_col_types)
+  if(BroadBand || is.null(input_School2mun) ||
+     (SchoolBuildings && is.null(input_SchoolBuildings)) ||
+     (nstud && is.null(input_nstud))){
+    while(is.null(input_Registry)){
+      input_Registry <- Get_Registry(Year = Year, show_col_types = show_col_types, autoAbort = autoAbort)
+      if(is.null(input_Registry)){
+        if(!autoAbort){
+          holdOn <- ""
+          message("Error during schools registry retrieving. Would you abort the whole operation or retry? \n",
+                  "    - To abort the operation, press `A` \n",
+                  "    - To retry data retrieving, press any other key \n")
+          holdOn <- readline(prompt = "    ")
+          if(toupper(holdOn) == "A"){
+            cat("You chose to abort the operation \n")
+            return(NULL)
+          } else {
+            cat("You chose to retry \n")
+          }
+        } else return(NULL)
+      }
+    }
   }
 
-  if((SchoolBuildings || nstud || BroadBand) && is.null(input_AdmUnNames)){
-    input_AdmUnNames <- Get_AdmUnNames(
-      Year = ifelse(any(year.patternA(Year) %in%
-                          c(year.patternA(2016), year.patternA(2018))), Year, YearMinus1),
-      date = ifelse(any(year.patternA(Year) %in%
-                          c(year.patternA(2016), year.patternA(2018))), "01_01_", "30_06_"))
+  if(SchoolBuildings || nstud || BroadBand){
+    while(is.null(input_AdmUnNames)){
+      input_AdmUnNames <- Get_AdmUnNames(
+        Year = ifelse(any(year.patternA(Year) %in% c(
+          year.patternA(2016), year.patternA(2018))), Year, YearMinus1),
+        date = ifelse(any(year.patternA(Year) %in%c(
+          year.patternA(2016), year.patternA(2018))), "01_01_", "30_06_"), autoAbort = autoAbort)
+      if(is.null(input_AdmUnNames)){
+        if(!autoAbort){
+          holdOn <- ""
+          message("Error during administrative codes retrieving. Would you abort the whole operation or retry? \n",
+                  "    - To abort the operation, press `A` \n",
+                  "    - To retry data retrieving, press any other key \n")
+          holdOn <- readline(prompt = "    ")
+          if(toupper(holdOn) == "A"){
+            cat("You chose to abort the operation \n")
+            return(NULL)
+          } else {
+            cat("You chose to retry \n")
+          }
+        } else return(NULL)
+      }
+    }
   }
 
-  if(is.null(input_School2mun)){
+  while(is.null(input_School2mun)){
     input_School2mun <- Get_School2mun(
       Year = Year, verbose = verbose, show_col_types = show_col_types,
-      input_Registry2 = input_Registry, input_AdmUnNames = input_AdmUnNames)
+      input_Registry2 = input_Registry, input_AdmUnNames = input_AdmUnNames,
+      autoAbort = autoAbort)
+    if(is.null(input_School2mun)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during mapping schools to municipalities. Would you abort the whole operation or retry? \n",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
   }
 
-  if(SchoolBuildings){
+  while(Invalsi && is.null(input_Invalsi_IS)){
+    input_Invalsi_IS <- Get_Invalsi_IS(level = level, verbose = verbose,
+                                       show_col_types = show_col_types, autoAbort = autoAbort)
+    if(is.null(input_Invalsi_IS)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during Invalsi data retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          Invalsi <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else Invalsi <- FALSE
+    }
+  }
+
+  while(SchoolBuildings && is.null(input_SchoolBuildings)){
+    input_SchoolBuildings <-
+      Get_DB_MIUR(Year = Year, verbose = verbose, show_col_types = show_col_types,
+                  input_Registry = input_Registry, input_AdmUnNames = input_AdmUnNames,
+                  autoAbort = autoAbort)
+
     if(is.null(input_SchoolBuildings)){
-      input_SchoolBuildings <-
-        Get_DB_MIUR(Year = Year, verbose = verbose, show_col_types = show_col_types,
-                    input_Registry = input_Registry, input_AdmUnNames = input_AdmUnNames)
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during school buildings DB retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          SchoolBuildings <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else SchoolBuildings <- FALSE
     }
     if(verbose) cat("\n")
   }
 
-  if((InnerAreas || nteachers || nstud_check) && is.null(input_InnerAreas)){
-    input_InnerAreas <- Get_InnerAreas()
+  while(InnerAreas && is.null(input_InnerAreas)){
+    input_InnerAreas <- Get_InnerAreas(autoAbort)
+    if(is.null(input_InnerAreas)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during inner areas classification retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the element \n")
+          InnerAreas <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else InnerAreas <- FALSE
+    }
   }
 
-  if(nstud && is.null(input_nstud)){
+  while(nstud && is.null(input_nstud)){
     if(nstud_missing_to_1){
       nstud_filename <- c("ALUCORSOETASTA", "ALUCORSOINDCLASTA")
     } else {
       nstud_filename <- "ALUCORSOINDCLASTA"
     }
-    input_nstud <- Get_nstud(Year = Year, verbose = verbose, filename = nstud_filename)
-  }
-
-  if(nteachers && is.null(input_nteachers)){
-    input_nteachers <- Get_nteachers_prov(
-      Year = Year, verbose = verbose, show_col_types = show_col_types)
-  }
-
-  if(BroadBand){
-    if(is.null(input_BroadBand)){
-      input_BroadBand <- Get_BroadBand(verbose = verbose, Date = Date)
+    input_nstud <- Get_nstud(Year = Year, verbose = verbose, filename = nstud_filename, autoAbort = autoAbort)
+    if(is.null(input_nstud)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during students counts retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          nstud <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else nstud <- FALSE
     }
-    if(!is.null(input_BroadBand)){
-      input_BroadBand <- input_BroadBand %>%
-        dplyr::filter(!grepl("[^A-Z]", substr(.data$School_code,1,4)) &
-                        !grepl("X", substr(.data$School_code,1,4), ignore.case = TRUE))
+  }
 
+  while(nteachers && is.null(input_nteachers)){
+    input_nteachers <- Get_nteachers_prov(Year = Year, verbose = verbose,
+                                          show_col_types = show_col_types, autoAbort = autoAbort)
+    if(is.null(input_nteachers)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during teachers counts retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the element \n")
+          nteachers <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else nteachers <- FALSE
+    }
+  }
 
+  while(BroadBand && is.null(input_BroadBand)){
+    input_BroadBand <- Get_BroadBand(verbose = verbose, Date = Date, autoAbort = autoAbort)
+    if(is.null(input_BroadBand)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during broadband data retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          BroadBand <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else BroadBand <- FALSE
+    }
+  }
+
+  while(RiskMap && is.null(input_RiskMap) && level %in% c("LAU", "Municipality")){
+    input_RiskMap <- Get_RiskMap(verbose = verbose, metadata = FALSE, autoAbort = autoAbort)
+    if(is.null(input_RiskMap)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during risk map retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          RiskMap <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else RiskMap <- FALSE
     }
   }
 
@@ -241,10 +393,16 @@ Set_DB <- function( Year = 2023,
         input_SchoolBuildings <- filterCommonRows(input_SchoolBuildings, input_nstud_byclass, verbose)
       }
       if(!is.null(input_BroadBand)){
-        input_BroadBand <- filterCommonRows(input_BroadBand, input_SchoolBuildings, verbose)
+        input_BroadBand <- input_BroadBand %>%
+          dplyr::filter(!grepl("[^A-Z]", substr(.data$School_code,1,4)) &
+                        !grepl("X", substr(.data$School_code,1,4), ignore.case = TRUE)) %>%
+          filterCommonRows(input_SchoolBuildings, verbose)
       }
     } else if(!is.null(input_nstud) && !is.null(input_BroadBand)){
-      input_BroadBand <- filterCommonRows(input_BroadBand, input_nstud_byclass, verbose)
+      input_BroadBand <- input_BroadBand %>%
+        dplyr::filter(!grepl("[^A-Z]", substr(.data$School_code,1,4)) &
+                      !grepl("X", substr(.data$School_code,1,4), ignore.case = TRUE)) %>%
+        filterCommonRows(input_nstud_byclass, verbose)
     }
     if(!is.null(input_nstud)) input_nstud$ALUCORSOINDCLASTA <- input_nstud_byclass
     if(verbose) cat("\n")
@@ -265,6 +423,8 @@ Set_DB <- function( Year = 2023,
     }
     if(!is.null(input_BroadBand)){
       input_BroadBand <- input_BroadBand %>%
+        dplyr::filter(!grepl("[^A-Z]", substr(.data$School_code,1,4)) &
+                      !grepl("X", substr(.data$School_code,1,4), ignore.case = TRUE)) %>%
         dplyr::filter(.data$School_code %in% input_School2mun$Registry_from_registry$School_code)
     }
   }
@@ -357,7 +517,7 @@ Set_DB <- function( Year = 2023,
     }
 
     BB <- Group_BroadBand(
-      Date = Date, verbose = verbose, input_BroadBand = input_BroadBand )
+      Date = Date, verbose = verbose, data = input_BroadBand )
     if(level %in% c("LAU", "Municipality")){
       datasets[["BroadBand"]] <- BB$Municipality_data %>%
         dplyr::select( -.data$Region_code, -.data$Region_description, -.data$nschools )
@@ -367,10 +527,7 @@ Set_DB <- function( Year = 2023,
     }
   }
 
-  if(RiskMap && level %in% c("LAU", "Municipality")){
-    if(is.null(input_RiskMap)){
-      input_RiskMap <- Get_RiskMap(verbose = verbose, metadata = FALSE)
-    }
+  if(!is.null(input_RiskMap)){
     datasets[["RiskMap"]] <- input_RiskMap %>%
       dplyr::select(-.data$Data_rif, -.data$Id_territorio_ind,
                     -.data$Region_code, -.data$Region_description,
@@ -391,11 +548,12 @@ Set_DB <- function( Year = 2023,
     }
   }
 
-  if(Invalsi){
+  if(!is.null(input_Invalsi_IS)){
 
     Invalsi_IS <- Util_Invalsi_filter(data = input_Invalsi_IS,
                                       Year = Year, subj = Invalsi_subj, grade = Invalsi_grade, level = level,
                                       WLE = Invalsi_WLE, verbose = verbose)
+
     SchoolOrder <- c(ifelse(any(Invalsi_grade < 6), "Primary", NA),
                      ifelse(8 %in% Invalsi_grade, "Middle", NA),
                      ifelse(any(Invalsi_grade>8), "High", NA))
@@ -442,14 +600,7 @@ Set_DB <- function( Year = 2023,
     endtime <- Sys.time()
     if(verbose){
       cat(difftime(endtime, start.zero, units = "secs"), " seconds needed to import all input data \n \n")
-    }
-
-    #datasets <- datasets %>% lapply(function(x){
-    #  if("Order" %in% colnames(x)) {
-    #    x <- x %>% dplyr::filter(.data$Order %in% SchoolOrder)
-    #    return(x)
-    #  } else return(x)
-    #})
+    } #datasets <- datasets %>% lapply(function(x){#  if("Order" %in% colnames(x)) {#    x <- x %>% dplyr::filter(.data$Order %in% SchoolOrder)#    return(x)#  } else return(x)    #})
   }
 
   init <- input_School2mun$Registry_from_registry %>%
@@ -468,12 +619,12 @@ Set_DB <- function( Year = 2023,
 
   if(level %in% c("LAU", "Municipality")){
 
-    datasets[["Invalsi_IS"]] <- datasets[["Invalsi_IS"]] %>%
-      dplyr::mutate(Province_code = as.numeric(substr(.data$Municipality_code, 1, 3))) %>%
-      dplyr::relocate(.data$Province_code, .before = 1)
+    if(!is.null(datasets[["Invalsi_IS"]])){
+      datasets[["Invalsi_IS"]] <- datasets[["Invalsi_IS"]] %>%
+        dplyr::mutate(Province_code = as.numeric(substr(.data$Municipality_code, 1, 3))) %>%
+        dplyr::relocate(.data$Province_code, .before = 1)
+    }
 
-
-    ### datasets.backup <- datasets
     datasets[2:length(datasets)] <- datasets[2:length(datasets)] %>%
       lapply(function(x){
         if(!any(grepl("Teachers", names(x)))){
@@ -484,11 +635,13 @@ Set_DB <- function( Year = 2023,
         } else{
           if(is.null(input_nstud)){
             x <- x[, which(names(x) %in%  c(
-              "Province_code", "Order", "Tot_teachers", "Tot_Students", "Students_per_class_Tot",
-              "Tot_Classes", "Teachers_per_student", "Teachers_per_class"))]
+              "Province_code", "Order", "Tot_teachers", "Tot_ATA", "Tot_Students", "Students_per_class_Tot",
+              "Tot_Classes", "Teachers_per_student", "Teachers_per_class",
+              "ATA_per_student", "ATA_per_class"))]
           } else {
             x <- x[, which(names(x) %in%  c(
-              "Province_code", "Order", "Tot_teachers", "Teachers_per_student", "Teachers_per_class"))]
+              "Province_code", "Order", "Tot_teachers", "Teachers_per_student", "Teachers_per_class",
+              "Tot_ATA", "ATA_per_student", "ATA_per_class"))]
           }
         }
       })
@@ -496,8 +649,8 @@ Set_DB <- function( Year = 2023,
     res <- datasets[[1]]
     remaining <- list()
     for(i in (2:length(datasets))){
+      ncol.old <- ncol(res)
       if("Municipality_code" %in% names(datasets[[i]])){
-        ncol.old <- ncol(res)
         if("Order" %in% names(datasets[[i]])){
           res <- res %>%
             dplyr::left_join(datasets[[i]],by = c("Municipality_code", "Order"))
@@ -515,12 +668,13 @@ Set_DB <- function( Year = 2023,
           names(remaining)[[length(remaining)]] <- names(datasets[[i]])
         }
       } else if("Province_code" %in% names(datasets[[i]])){
-        if("Order" %in% names(res)){
+        if("Order" %in% names(res) && !all(is.na(datasets[[i]]$Order))){
           res <- res %>% dplyr::left_join(datasets[[i]], by = c("Province_code", "Order"))
         } else {
           # WARNING: this is specific to nteachers - not robust to different data
           datasets[[i]] <- datasets[[i]][,which(
-            names(datasets[[i]]) %in% c("Province_code", "Tot_Students", "Tot_Classes", "Tot_teachers"))]
+            names(datasets[[i]]) %in% c("Province_code", "Tot_Students", "Tot_Classes",
+                                        "Tot_teachers", "Tot_ATA"))]
           startcol <- 1
           endcol <- ncol(datasets[[i]]) - 1
           datasets[[i]] <- datasets[[i]] %>%
@@ -529,16 +683,30 @@ Set_DB <- function( Year = 2023,
             dplyr::ungroup()
           names(datasets[[i]]) <- stringr::str_remove(names(datasets[[i]]), "_1")
           if("Tot_Students" %in% names(datasets[[i]])){
-            datasets[[i]] <- datasets[[i]] %>%
-              dplyr::mutate(Teachers_per_student = .data$Tot_teachers/.data$Tot_Students)
+            if("Tot_teachers" %in% names(datasets[[i]])){
+              datasets[[i]] <- datasets[[i]] %>%
+                dplyr::mutate(Teachers_per_student = .data$Tot_teachers/.data$Tot_Students)
+            }
+            if("Tot_ATA" %in% names(datasets[[i]])){
+              datasets[[i]] <- datasets[[i]] %>%
+                dplyr::mutate(ATA_per_student = .data$Tot_ATA/.data$Tot_Students)
+            }
+
             if("Tot_Classes" %in% names(datasets[[i]])){
               datasets[[i]] <- datasets[[i]] %>%
-                dplyr::mutate(Students_per_class_Tot = .data$Tot_Classes/.data$Tot_Students)
+                dplyr::mutate(Students_per_class_Tot = .data$Tot_Students/.data$Tot_Classes)
             }
           }
           if("Tot_Classes" %in% names(datasets[[i]])){
-            datasets[[i]] <- datasets[[i]] %>%
-              dplyr::mutate(Teachers_per_class = .data$Tot_teachers/.data$Tot_Classes)
+            if("Tot_teachers" %in% names(datasets[[i]])){
+              datasets[[i]] <- datasets[[i]] %>%
+                dplyr::mutate(Teachers_per_class = .data$Tot_teachers/.data$Tot_Classes)
+            }
+            if("Tot_ATA" %in% names(datasets[[i]])){
+              datasets[[i]] <- datasets[[i]] %>%
+                dplyr::mutate(Teachers_per_class = .data$Tot_teachers/.data$Tot_Classes)
+
+            }
           }
           res <- res %>% dplyr::left_join(datasets[[i]], by = "Province_code")
         }
@@ -569,7 +737,6 @@ Set_DB <- function( Year = 2023,
     datasets[["Registry"]] <- datasets[["Registry"]] %>%
       dplyr::distinct(.data$Province_code, .data$Province_initials, .data$Order)
 
-    #datasets.backup <- datasets
     datasets[2:length(datasets)] <- datasets[2:length(datasets)] %>%
       lapply(function(x){
         x <- x[,which(!names(x) %in% c(
@@ -580,7 +747,11 @@ Set_DB <- function( Year = 2023,
     #remaining <- list() #CURRENTLY not needed. Currently.
     for(i in (2:length(datasets))){
       ncol.old <- ncol(res)
-      res <- res %>%  dplyr::left_join(datasets[[i]], by = c("Province_code", "Order"))
+      if("Order" %in% names(datasets[[i]])){
+        res <- res %>%  dplyr::left_join(datasets[[i]], by = c("Province_code", "Order"))
+      } else {
+        res <- res %>%  dplyr::left_join(datasets[[i]], by = "Province_code")
+      }
       notfound <- which(apply(res[-c(1:ncol.old)], MARGIN = 1, function(x) all(is.na(x))))
       if(length(notfound)>0){
         if(verbose){
@@ -604,4 +775,3 @@ Set_DB <- function( Year = 2023,
 
   return(res)
 }
-

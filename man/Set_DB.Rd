@@ -46,7 +46,8 @@ Set_DB(
   input_teachers4student = NULL,
   input_nteachers = NULL,
   input_BroadBand = NULL,
-  input_RiskMap = NULL
+  input_RiskMap = NULL,
+  autoAbort = FALSE
 )
 }
 \arguments{
@@ -123,15 +124,15 @@ If \code{NULL}, it will be downloaded automatically, but not saved in the global
 \code{NULL} by default}
 
 \item{input_Registry}{Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
-The school registry corresponding to the year in scope, obtained as output of the function \code{\link{Get_Registry}}
+The school registry corresponding to the year in scope, obtained as output of the function \code{\link{Get_Registry}}.
 If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 \code{NULL} by default}
 
-\item{input_SchoolBuildings}{Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}. If \code{SchoolBuildings == TRUE}, the raw school buildings dataset obtained as output of the function \code{\link{Get_DB_MIUR}}
-If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default}
+\item{input_SchoolBuildings}{Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}. If \code{SchoolBuildings == TRUE}, the raw school buildings dataset obtained as output of the function \code{\link{Get_DB_MIUR}}.
+If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default.}
 
 \item{input_nstud}{Object of class \code{list}, including two objects of class\code{tbl_df}, \code{tbl} and \code{data.frame}.
-If \code{nstud == TRUE}, the number of students by class, obtained as output of the \code{\link{Get_nstud}} function with the default \code{filename} parameter.
+If \code{nstud == TRUE}, the students and classes counts, obtained as output of the function \code{\link{Get_nstud}} with default \code{filename} parameter.
 If \code{NULL}, the function will download it automatically but it will not be saved in the global environment. \code{NULL} by default.}
 
 \item{input_School2mun}{Object of class \code{list} with elements of class \code{tbl_df}, \code{tbl} and \code{data.frame}
@@ -161,6 +162,8 @@ If \code{NULL}, it will be downloaded automatically but not saved in the global 
 
 \item{input_RiskMap}{Object of classs \code{tbl_df}, \code{tbl} and \code{data.frame}. If \code{RiskMap == TRUE} and \code{level == "LAU"} (or \code{"Municipality"}), the map of risks of Italian municipalities, obtaned as output of the function \code{\link{Get_RiskMap}}.
 If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default}
+
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 An object of  class \code{tbl_df}, \code{tbl} and \code{data.frame}
@@ -183,25 +186,21 @@ When a new dataset is joined to the existing ones, it is possible that some obse
 \examples{
 
 
-data("example_input_DB23_MIUR")
-data("example_Invalsi23_prov")
-data("example_InnerAreas")
-data("example_input_nstud23")
-data("example_School2mun23")
-data("example_AdmUnNames20220630")
 
-Set_DB(Year = 2023, level = "NUTS-3",
+DB23_prov <- Set_DB(Year = 2023, level = "NUTS-3",Invalsi_grade = c(5, 8, 13),
+      Invalsi_subj = "Italian",nteachers = FALSE, BroadBand = FALSE,
+      SchoolBuildings_count_missing = FALSE,NA_autoRM= TRUE,
       input_SchoolBuildings = example_input_DB23_MIUR[, -c(11:18, 10:27)],
       input_Invalsi_IS = example_Invalsi23_prov,
       input_nstud = example_input_nstud23,
       input_InnerAreas = example_InnerAreas,
       input_School2mun = example_School2mun23,
-      input_AdmUnNames = example_AdmUnNames20220630,
-      nteachers = FALSE, BroadBand = FALSE, Invalsi_grade = 5,
-      Invalsi_subj = "Italian",
-      SchoolBuildings_count_missing = FALSE,
-      NA_autoRM= TRUE)
+      input_AdmUnNames = example_AdmUnNames20220630)
 
+
+DB23_prov
+
+summary(DB23_prov[, -c(22:62)])
 
 
 

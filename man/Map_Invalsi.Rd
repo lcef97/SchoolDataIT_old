@@ -6,6 +6,7 @@
 \usage{
 Map_Invalsi(
   Year = 2023,
+  data = NULL,
   subj_toplot = "ITA",
   grade = 8,
   level = "LAU",
@@ -18,13 +19,18 @@ Map_Invalsi(
   col.rev = FALSE,
   popup_height = 200,
   verbose = TRUE,
-  input_Invalsi_IS = NULL,
-  input_shp = NULL
+  input_shp = NULL,
+  autoAbort = FALSE
 )
 }
 \arguments{
 \item{Year}{Numeric or character value. Reference school year for the data (last available is 2022/23).
 Available in the formats: \code{2022}, \code{"2021/2022"}, \code{202122}, \code{20212022}. \code{2022} by default}
+
+\item{data}{Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
+The raw Invalsi survey data that has to be filtered, obtained as output of the \code{\link{Get_Invalsi_IS}} function.
+If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
+\code{NULL} by default}
 
 \item{subj_toplot}{Character. The school subject to display in the map,
 The school subject to include, one among:
@@ -57,13 +63,10 @@ By default, \code{c(1,3,5:20)}, i.e. all Italian regions except the provinces of
 
 \item{verbose}{Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.}
 
-\item{input_Invalsi_IS}{Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
-The raw Invalsi survey data that has to be filtered, obtained as output of the \code{\link{Get_Invalsi_IS}} function.
-If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
-\code{NULL} by default}
-
 \item{input_shp}{Object of class \code{sf}, \code{tbl_df}, \code{tbl}, \code{data.frame}. The relevant shapefiles of Italian administrative boudaries,
 at the selected level of detail (LAU or NUTS-3). If \code{NULL}, it is downloaded automatically but not saved in the global environment. \code{NULL} by default.}
+
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 If \code{plot == "mapview"}, an object of class \code{mapview}. Otherwise, if \code{plot == "ggplot"}, an object of class \code{gg} and \code{ggplot}.
@@ -80,15 +83,12 @@ It supports two kinds of map:
 
 
 
-data("example_Invalsi23_prov")
-data("example_Prov22_shp")
-
 
  Map_Invalsi(subj = "Italian", grade = 13, level = "NUTS-3", Year = 2023, WLE = FALSE,
-  input_Invalsi_IS = example_Invalsi23_prov, input_shp = example_Prov22_shp, plot = "ggplot")
+  data = example_Invalsi23_prov, input_shp = example_Prov22_shp, plot = "ggplot")
 
  Map_Invalsi(subj = "Italian", grade = 5, level = "NUTS-3", Year = 2023, WLE = TRUE,
-  input_Invalsi_IS = example_Invalsi23_prov, input_shp = example_Prov22_shp, plot = "ggplot")
+  data = example_Invalsi23_prov, input_shp = example_Prov22_shp, plot = "ggplot")
 
 
 

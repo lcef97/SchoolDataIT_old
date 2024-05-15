@@ -7,7 +7,7 @@
 <https://www.istat.it/it/archivio/222527>
 }
 \usage{
-Get_Shapefile(Year, level = "LAU", lightShp = TRUE)
+Get_Shapefile(Year, level = "LAU", lightShp = TRUE, autoAbort = FALSE)
 }
 \arguments{
 \item{Year}{Numeric value. Reference year for the administrative units.}
@@ -15,7 +15,9 @@ Get_Shapefile(Year, level = "LAU", lightShp = TRUE)
 \item{level}{Character. Either \code{"NUTS-3"}, \code{"Province"}, \code{"LAU"}, \code{"Municipality"}. \code{"LAU"} by default}
 
 \item{lightShp}{Logical. If \code{TRUE}, the function downloads a generalised, i.e.less detailed, and lighter version of the shapefiles.
-\code{TRUE} by default}
+\code{TRUE} by default.}
+
+\item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 A spatial data frame of class \code{data.frame} and \code{sf}.
@@ -27,16 +29,12 @@ A spatial data frame of class \code{data.frame} and \code{sf}.
 
 \donttest{
   library(magrittr)
-  library(sf)
 
-  Prov23_shp <- Get_Shapefile(2023, lightShp = TRUE, level = "NUTS-3")
+
+  Prov23_shp <- Get_Shapefile(2023, lightShp = TRUE, level = "NUTS-3", autoAbort = TRUE)
   ggplot2::ggplot() + ggplot2::geom_sf(data = Prov23_shp) +
     ggplot2::ggtitle("Italian provinces in 2023/01/01")
  }
-
-
-
-
 
 
 }

@@ -29,12 +29,13 @@
 #' @param col.rev Logical. Whether the scale of the colour palette should be reverted or not, if the \code{mapview} mode is chosen. \code{FALSE} by default
 #' @param popup_height Numeric. The height of the popup table in terms of pixels if the \code{"mapview"} mode is chosen. \code{200} by default.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
-#' @param input_Invalsi_IS Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
+#' @param data Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
 #' The raw Invalsi survey data that has to be filtered, obtained as output of the \code{\link{Get_Invalsi_IS}} function.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 #' \code{NULL} by default
 #' @param input_shp Object of class \code{sf}, \code{tbl_df}, \code{tbl}, \code{data.frame}. The relevant shapefiles of Italian administrative boudaries,
 #' at the selected level of detail (LAU or NUTS-3). If \code{NULL}, it is downloaded automatically but not saved in the global environment. \code{NULL} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #'
 #'
@@ -45,15 +46,12 @@
 #'
 #'
 #'
-#' data("example_Invalsi23_prov")
-#' data("example_Prov22_shp")
-#'
 #'
 #'  Map_Invalsi(subj = "Italian", grade = 13, level = "NUTS-3", Year = 2023, WLE = FALSE,
-#'   input_Invalsi_IS = example_Invalsi23_prov, input_shp = example_Prov22_shp, plot = "ggplot")
+#'   data = example_Invalsi23_prov, input_shp = example_Prov22_shp, plot = "ggplot")
 #'
 #'  Map_Invalsi(subj = "Italian", grade = 5, level = "NUTS-3", Year = 2023, WLE = TRUE,
-#'   input_Invalsi_IS = example_Invalsi23_prov, input_shp = example_Prov22_shp, plot = "ggplot")
+#'   data = example_Invalsi23_prov, input_shp = example_Prov22_shp, plot = "ggplot")
 #'
 #'
 #'
@@ -61,10 +59,10 @@
 #'
 #' @export
 
-Map_Invalsi <- function(Year = 2023, subj_toplot = "ITA", grade = 8, level = "LAU",
+Map_Invalsi <- function(Year = 2023, data = NULL, subj_toplot = "ITA", grade = 8, level = "LAU",
                         main = "", main_pos = "top", region_code = c(1:20), plot="mapview", pal = "Blues",
-                        WLE = FALSE, col.rev = FALSE, popup_height = 200, verbose = TRUE, input_Invalsi_IS = NULL,
-                        input_shp = NULL){
+                        WLE = FALSE, col.rev = FALSE, popup_height = 200, verbose = TRUE,
+                        input_shp = NULL, autoAbort = FALSE){
 
   if (length(subj_toplot) > 1){
     warning("Only one subject can be selected for mapping. The first one will be plotted")
@@ -78,17 +76,47 @@ Map_Invalsi <- function(Year = 2023, subj_toplot = "ITA", grade = 8, level = "LA
     grade <- grade[1L]
   }
 
-  if(is.null(input_Invalsi_IS)){
-    input_Invalsi_IS <- Get_Invalsi_IS(level = level, verbose = verbose)
+  while(is.null(data)){
+    data <- Get_Invalsi_IS(level = level, verbose = verbose, autoAbort = autoAbort)
+    if(is.null(data)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during Invalsi data retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
   }
 
-  if(is.null(input_shp)){
+  while(is.null(input_shp)){
     YearMinus1 <- as.numeric(year.patternA(Year))%/%100
     input_shp <- Get_Shapefile(Year =
-      ifelse(year.patternA(Year)=="201819", Year, YearMinus1), level = level)
+      ifelse(year.patternA(Year)=="201819", Year, YearMinus1), level = level, autoAbort = autoAbort)
+    if(is.null(input_shp)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during shapefile retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
   }
 
-  dat <- Util_Invalsi_filter(data = input_Invalsi_IS, Year = Year,
+  dat <- Util_Invalsi_filter(data = data, Year = Year,
                              subj = c("ELI", "ERE", "ITA", "MAT"),
                              grade = grade, level = level, WLE=WLE,
                              verbose = verbose)

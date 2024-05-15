@@ -18,6 +18,7 @@ Map_DB(
   main_pos = "top",
   main = "",
   order = NULL,
+  autoAbort = FALSE,
   ...
 )
 }
@@ -54,6 +55,8 @@ The header is located on the top if \code{"top"} is given as input, and above th
 \item{order}{Character. The educational level. Either \code{"Primary"} (primary school), \code{"Middle"} (middle school), or \code{"High"} (high school).
 If the data include the Invalsi census survey, please select a level consistent with the chosen educational grade. \code{"Media"} by default.}
 
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
+
 \item{...}{Additional arguments for the input database, if not provided; see \code{\link{Set_DB}}}
 }
 \value{
@@ -76,21 +79,13 @@ This function generalises the functionalities of the more data-specific function
 
 
 
-
-data("example_Prov22_shp")
-data("example_input_DB23_MIUR")
-data("example_Invalsi23_prov")
-data("example_InnerAreas")
-data("example_input_nstud23")
-data("example_School2mun23")
-data("example_AdmUnNames20220630")
-
-DB23 <- Set_DB(Year = 2023, level = "NUTS-3", input_SchoolBuildings = example_input_DB23_MIUR,
+DB23 <- Set_DB(Year = 2023, level = "NUTS-3",
+       Invalsi_grade = c(10,13), NA_autoRM = TRUE,
        input_Invalsi_IS = example_Invalsi23_prov, input_nstud = example_input_nstud23,
        input_InnerAreas = example_InnerAreas,
        input_School2mun = example_School2mun23,
        input_AdmUnNames = example_AdmUnNames20220630,
-       nteachers = FALSE, BroadBand = FALSE)
+       nteachers = FALSE, BroadBand = FALSE, SchoolBuildings = FALSE)
 
 
 
@@ -100,9 +95,6 @@ Map_DB(DB23, field = "Students_per_class_13", input_shp = example_Prov22_shp, le
 
 Map_DB(DB23, field = "Inner_area", input_shp = example_Prov22_shp, order = "High",
  level = "NUTS-3",col_rev = TRUE, plot = "ggplot")
-
-Map_DB(DB23, field = "Interurban_public_transport", input_shp = example_Prov22_shp, order = "High",
- level = "NUTS-3", plot = "ggplot")
 
 Map_DB(DB23, field = "M_Mathematics_10", input_shp = example_Prov22_shp, level = "NUTS-3",
  plot = "ggplot")

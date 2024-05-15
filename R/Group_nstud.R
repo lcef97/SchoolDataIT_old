@@ -36,6 +36,7 @@
 #' The ISTAT file including all the codes and the names of the administrative units for the year in scope.
 #' Only needed if \code{check == TRUE} and the argument \code{input_School2mun} is \code{NULL}.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment. \code{NULL} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param ... Additional arguments to the function \code{\link{Util_nstud_wide}} if \code{data} is not provided.
 #'
 #'
@@ -52,29 +53,19 @@
 #'
 #' @details Numerical variables are summarised by the mean; Boolean variables are summarised by the mean as well, thus they become frequency indicators.
 #' Qualitative values, if included, are summarised by the mode. Summary measures do not include NAs.
-#' In the example we compare the results with default settings and with narrower inclusion criteria (i.e. removing schools with less than 10 or more than 30 students per class on average)
+#'
 #'
 #' @examples
 #
 #' Year <- 2023
 #'
-#' data("example_input_nstud23")
-#' data("example_input_Registry23")
-#' data("example_School2mun23")
+#' nstud23_aggr <- Group_nstud(data = example_input_nstud23, Year = Year,
+#'                            input_Registry2 = example_input_Registry23,
+#'                            InnerAreas = FALSE,  input_School2mun = example_School2mun23)
 #'
+#' summary(nstud23_aggr$Municipality_data[,c(46,47,48)])
 #'
-#'
-#' Group_nstud(data = example_input_nstud23, Year = Year,
-#'             input_Registry2 = example_input_Registry23,
-#'             InnerAreas = FALSE,  input_School2mun = example_School2mun23)
-#'
-#'
-#' Group_nstud(data = example_input_nstud23, Year = Year, UB_nstud_byclass = 30,
-#'              InnerAreas = FALSE, LB_nstud_byclass = 10,
-#'              input_Registry = example_input_Registry23,
-#'              input_School2mun = example_School2mun23)
-#
-#'
+#' summary(nstud23_aggr$Province_data[,c(44,45,46)])
 #'
 #'
 #' @export
@@ -86,15 +77,31 @@ Group_nstud <- function(data = NULL, Year = 2023,
                         ord_InnerAreas = FALSE, check_ggplot = FALSE,
                         missing_to_1 = FALSE, input_Registry2 = NULL,
                         input_InnerAreas = NULL, input_Prov_shp = NULL,
-                        input_School2mun = NULL, input_AdmUnNames = NULL, ...) {
+                        input_School2mun = NULL, input_AdmUnNames = NULL,
+                        autoAbort = FALSE, ...) {
 
   options(dplyr.summarise.inform = FALSE)
   . <- NULL
 
   start.zero <- Sys.time()
 
-  if(is.null(data)){
-    data <- Get_nstud(Year = Year, verbose = verbose)
+  while(is.null(data)){
+    data <- Get_nstud(Year = Year, verbose = verbose, autoAbort = autoAbort)
+    if(is.null(data)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during students counts retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
   }
 
   if(is.data.frame(data)){
@@ -107,10 +114,26 @@ Group_nstud <- function(data = NULL, Year = 2023,
 
 
   if(verbose) cat("Linking schools to reference municipalities \n")
-  if(is.null(input_School2mun)){
+  while(is.null(input_School2mun)){
     input_School2mun <- Get_School2mun(
       Year = Year,verbose = verbose,
-      input_Registry2 = input_Registry2, input_AdmUnNames = input_AdmUnNames)
+      input_Registry2 = input_Registry2, input_AdmUnNames = input_AdmUnNames,
+      autoAbort = autoAbort)
+    if(is.null(input_School2mun)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error occurred in mapping school to municipalities. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
   }
   if(!is.data.frame(input_School2mun)) School2mun.R <- input_School2mun[[check_registry]]
 
@@ -169,22 +192,27 @@ Group_nstud <- function(data = NULL, Year = 2023,
       dplyr::relocate(j, .after = k)
   }
 
+  nstud.check <- NULL
   if(check){
     if(verbose) cat("Checking whether schools are included in school registries \n")
     nstud.check <-
-      Util_Check_nstud_availability(nstud.byclass, Year = Year,cutout = c("IC", "IS", "NR"),
-                                    ggplot = check_ggplot,
-                                    verbose = verbose, InnerAreas = InnerAreas,
-                                    ord_InnerAreas = ord_InnerAreas,
-                                    input_Registry2 = input_Registry2, input_AdmUnNames = NULL,
-                                    input_InnerAreas = input_InnerAreas,
-                                    input_Prov_shp = input_Prov_shp, input_School2mun = input_School2mun)
-
+        Util_Check_nstud_availability(nstud.byclass, Year = Year,cutout = c("IC", "IS", "NR"),
+                                      ggplot = check_ggplot,
+                                      verbose = verbose, InnerAreas = InnerAreas,
+                                      ord_InnerAreas = ord_InnerAreas,
+                                      input_Registry2 = input_Registry2, input_AdmUnNames = NULL,
+                                      input_InnerAreas = input_InnerAreas,
+                                      input_Prov_shp = input_Prov_shp, input_School2mun = input_School2mun,
+                                      autoAbort = autoAbort)
+  }
+  if(is.null(nstud.check)){
+    message("Error occurred during the students count availability check")
+  } else {
     check_mun <- nstud.check$Municipality_data[[check_registry]]
     if(InnerAreas){
       if(ord_InnerAreas){
         check_mun <- check_mun %>% dplyr::select(.data$Order, .data$Municipality_code, .data$Availability, .data$Inner_area,
-                                     .data$A_mun, .data$B_mun, .data$C_mun, .data$D_mun, .data$E_mun, .data$F_mun)
+                                                 .data$A_mun, .data$B_mun, .data$C_mun, .data$D_mun, .data$E_mun, .data$F_mun)
       } else {
         check_mun <- check_mun %>% dplyr::select(.data$Order, .data$Municipality_code, .data$Availability, .data$Inner_area)
       }
@@ -207,7 +235,7 @@ Group_nstud <- function(data = NULL, Year = 2023,
       if(ord_InnerAreas){
         check_prov <- check_prov %>%
           dplyr::select(.data$Order, .data$Province_code, .data$Availability, .data$Inner_area,
-                                      .data$A_mun, .data$B_mun, .data$C_mun, .data$D_mun, .data$E_mun, .data$F_mun)
+                        .data$A_mun, .data$B_mun, .data$C_mun, .data$D_mun, .data$E_mun, .data$F_mun)
       } else {
         check_prov <- check_prov %>%
           dplyr::select(.data$Order, .data$Province_code, .data$Availability, .data$Inner_area)
@@ -227,8 +255,8 @@ Group_nstud <- function(data = NULL, Year = 2023,
       tidyr::separate(.data$ID, into = c("Province_code", "Order"), sep = "___") %>%
       dplyr::mutate(Order = gsub("_", " ", .data$Order)) %>%
       dplyr::mutate(Province_code = as.numeric(.data$Province_code))
-
   }
+
   endtime <- Sys.time()
 
   if(verbose){
@@ -237,7 +265,6 @@ Group_nstud <- function(data = NULL, Year = 2023,
               ifelse(InnerAreas, "and for schools belonging to inner areas", ""),
               ":"), difftime(endtime, start.zero, units="secs"), "seconds \n"  )
   }
-
 
   return(list(Municipality_data = nstud.byclass_Mun, Province_data = nstud.byclass_Prov))
 }

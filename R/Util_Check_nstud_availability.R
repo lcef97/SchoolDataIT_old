@@ -1,10 +1,7 @@
 #' Check how many schools in the school registries are included in the students count dataframe
 #'
-#' @description  This function checks for which schools listed in the two registries (the one from the buildings section and the proper one from the buildings section)
-#' the count of students is available. The first registry is indicated as \code{Registry1} and the second one as \code{Registry2}.
-#'
-#'
-#'
+#' @description  This function checks for which schools listed in the two registries (the buildings registry and the schools registry)
+#' the count of students is available. The first registry is referred to as as \code{Registry1} and the second one as \code{Registry2}.
 #'
 #'
 #'
@@ -37,6 +34,7 @@
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment. \code{NULL} by default.
 #' @param input_School2mun Object of class \code{list} with elements of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_School2mun}}.
 #' The mapping from school codes to municipality (and province) codes. If \code{NULL}, it will be downloaded automatically, but not saved in the global environment. \code{NULL} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #'
 #'
@@ -55,21 +53,13 @@
 #'   \item \code{$Both}: object of class of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the availability of the number of students in the schools listed in both sections.
 #' }
 #'
-#' @references \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0101EDIANAGRAFESTA2021}{Buildings Registry};
+#' @source  \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0101EDIANAGRAFESTA2021}{Buildings Registry};
 #' \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Scuole&datasetId=DS0400SCUANAGRAFESTAT}{Schools Registry}
 #'
 #'
 #'
 #'
 #' @examples
-#'
-#'
-#' data("example_input_nstud23")
-#' data("example_input_Registry23")
-#' data("example_School2mun23")
-#' data("example_Prov22_shp")
-#'
-#'
 #'
 #' nstud23 <- Util_nstud_wide(example_input_nstud23, verbose = FALSE)
 #'
@@ -79,7 +69,7 @@
 #'
 #'
 #'
-#' @import sf
+#'
 #'
 #' @export
 
@@ -90,27 +80,73 @@ Util_Check_nstud_availability <- function(data, Year,
                                           ggplot = TRUE, toplot_registry = "Any",
                                           InnerAreas = TRUE, ord_InnerAreas = FALSE,
                                           input_Registry2 = NULL, input_InnerAreas = NULL,
-                                          input_Prov_shp = NULL, input_AdmUnNames = NULL, input_School2mun = NULL){
+                                          input_Prov_shp = NULL, input_AdmUnNames = NULL,
+                                          input_School2mun = NULL, autoAbort = FALSE){
 
   options(dplyr.summarise.inform = FALSE)
 
-  if(is.null(input_Prov_shp) & ggplot){
+  while(is.null(input_Prov_shp) && ggplot){
     if(verbose) cat("Downloading the shapefile (since ggplot has been required) \n")
     input_Prov_shp <- Get_Shapefile(
-      Year = as.numeric(year.patternA(Year))%/%100+1,level = "NUTS-3", lightShp = TRUE)
-  }
-
-  if(is.null(input_School2mun)){
-    input_School2mun <- Get_School2mun(Year = Year, verbose = verbose,
-                                       input_AdmUnNames = input_AdmUnNames, input_Registry2 = input_Registry2)
-  }
-
-  if(InnerAreas){
-    if(is.null(input_InnerAreas)){
-      if(verbose) cat("Retrieving the classification of inner areas \n")
-      input_InnerAreas <- Get_InnerAreas()
+      Year = as.numeric(year.patternA(Year))%/%100+1,level = "NUTS-3", autoAbort = autoAbort, lightShp = TRUE)
+    if(is.null(input_Prov_shp)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during shapefile retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the element \n")
+          ggplot <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else ggplot <- FALSE
     }
+  }
 
+  while(is.null(input_School2mun)){
+    input_School2mun <- Get_School2mun(
+      Year = Year, verbose = verbose, input_AdmUnNames = input_AdmUnNames,
+      input_Registry2 = input_Registry2, autoAbort = autoAbort)
+    if(is.null(input_School2mun)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during mapping schools to municipalities. Would you abort the whole operation or retry? \n",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
+  }
+
+  while(InnerAreas && is.null(input_InnerAreas)){
+    if(verbose) cat("Retrieving the classification of inner areas \n")
+    input_InnerAreas <- Get_InnerAreas(autoAbort = autoAbort)
+    if(is.null(input_InnerAreas)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during inner areas retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the element \n")
+          InnerAreas <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else InnerAreas <- FALSE
+    }
+  }
+  if(InnerAreas){
     if(dplyr::between(as.numeric(substr(year.patternA(Year),1,4))+1, 2021, 2027)){
       InnerAreas.R <- input_InnerAreas %>%
         dplyr::select(.data$Municipality_code, .data$Inner_area_code_2021_2027) %>%
@@ -242,17 +278,16 @@ Util_Check_nstud_availability <- function(data, Year,
       toplot_registry <- readline(prompt = "    ")
     }
 
-    R.Availability.wide <- Province_data[[toplot_registry]] %>% dplyr::filter(.data$Order %in% c("Primary", "Middle", "High")) %>%
-      dplyr::select(.data$Order, .data$Province_code, .data$Availability) %>%
-      tidyr::spread(key = .data$Order, value = .data$Availability)
-      #tidyr::pivot_wider(id_cols = .data$Province_code, names_from = .data$Order, values_from = .data$Availability)
-
+    R.Availability <- Province_data[[toplot_registry]] %>%
+      dplyr::filter(.data$Order %in% c("Primary", "Middle", "High")) %>%
+      dplyr::select(.data$Order, .data$Province_code, .data$Availability)
 
     dat.plot.long <- input_Prov_shp %>% dplyr::select(.data$COD_PROV) %>%
-      dplyr::rename(Province_code = .data$COD_PROV) %>% dplyr::left_join(R.Availability.wide, by = "Province_code") %>%
-      tidyr::gather("Order", "Availability", -.data$Province_code, -.data$geometry) #
+      dplyr::rename(Province_code = .data$COD_PROV) %>%
+      dplyr::left_join(R.Availability, by = "Province_code") %>%
+      dplyr::filter(!is.na(.data$Order))
 
-    toplot <- ggplot2::ggplot(dat.plot.long, ggplot2::aes(fill = .data$Availability)) + ggplot2::geom_sf() +
+     toplot <- ggplot2::ggplot(dat.plot.long, ggplot2::aes(fill = .data$Availability)) + ggplot2::geom_sf() +
       ggplot2::facet_wrap(~ .data$Order) + ggplot2::labs(title = paste("% Students number coverage by province in year ", Year))
 
     plot(toplot)

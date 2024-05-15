@@ -2,8 +2,8 @@
 #'
 #' @description This function returns two main pieces of information regarding Italian schools, namely:
 #' \itemize{
-#'   \item The denomination of the region, province and municipality to which the school belongs
-#'   \item The mechanographical code to the reference institute of each school
+#'   \item The denomination of the region, province and municipality to which the school belongs.
+#'   \item The mechanographical code to the reference institute of each school.
 #' }
 #' It is possible to access schools in all the national territory, including the autonomous provinces of Aosta, Trento and Bozen.
 #'
@@ -12,6 +12,7 @@
 #' @param Year Numeric or character. Reference school year (last available is 2024).
 #' Available in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{20222023}. \code{2023} by default.
 #' @param show_col_types Logical. If \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param filename Character. A string included in the name of the file to download, identifying the schools included.
 #' By default it is \code{c("SCUANAGRAFESTAT", "SCUANAAUTSTAT")}, i.e. the file names used for public school registries,
 #' respectively across all the national territory except for the autonomous provinces of Aosta, Trento or Bozen, and only in the three
@@ -27,7 +28,7 @@
 #' @examples
 #'
 #' \donttest{
-#'   Get_Registry(2024, filename = "SCUANAGRAFESTAT")
+#'   Get_Registry(2024, filename = "SCUANAGRAFESTAT", autoAbort = TRUE)
 #' }
 #'
 #'
@@ -37,13 +38,25 @@
 
 
 
-Get_Registry <- function(Year = 2023, filename = c("SCUANAGRAFESTAT", "SCUANAAUTSTAT"), show_col_types = FALSE){
+Get_Registry <- function(Year = 2023, filename = c("SCUANAGRAFESTAT", "SCUANAAUTSTAT"),
+                         show_col_types = FALSE, autoAbort = FALSE){
 
-  Check_connection()
-
+  if(!Check_connection(autoAbort)) return(NULL)
 
   home.url <-"https://dati.istruzione.it/opendata/opendata/catalogo/elements1/?area=Scuole"
-  homepage <- xml2::read_html(home.url)
+  homepage <- NULL
+  attempt <- 0
+  while(is.null(homepage) && attempt <= 10){
+    homepage <- tryCatch({
+      xml2::read_html(home.url)
+    }, error = function(e){
+      message("Cannot read the html; ", 10 - attempt,
+              " attempts left. If the problem persists, please contact the mantainer.\n")
+      return(NULL)
+    })
+    attempt <- attempt + 1
+  }
+  if(is.null(homepage)) return(NULL)
   name_pattern2 <- "([0-9]+)\\.(csv)$"
   links <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href") %>% unique()
 
@@ -77,7 +90,7 @@ Get_Registry <- function(Year = 2023, filename = c("SCUANAGRAFESTAT", "SCUANAAUT
     }
 
     if (!"file_to_download" %in% ls()){
-      warning("No data available for this year. We apologise for the inconvenience")
+      message("Schools registry not available for this year. We apologise for the inconvenience.")
       return(NULL)
     }
 
@@ -85,38 +98,50 @@ Get_Registry <- function(Year = 2023, filename = c("SCUANAGRAFESTAT", "SCUANAAUT
     while(status != 200){
       base.url <- dirname(home.url)
       file.url <- file.path(base.url, file_to_download)
-      response <- httr::GET(file.url)
+      response <- tryCatch({
+        httr::GET(file.url)
+      }, error = function(e) {
+        message("Error occurred during scraping, attempt repeated ... \n")
+        NULL
+      })
       status <- response$status_code
+      if(is.null(response)){
+        status <- 0
+      }
+      if(status != 200){
+        message("Operation exited with status: ", status, "; operation repeated")
+      }
     }
 
     if (httr::http_type(response) %in% c("application/csv", "text/csv", "application/octet-stream")) {
       dat <- readr::read_csv(rawToChar(response$content), show_col_types = show_col_types) %>%
         dplyr::mutate(CAPSCUOLA = as.character(.data$CAPSCUOLA))
+      names(dat) <- names(dat) %>% stringr::str_replace_all("ANNOSCOLASTICO", "Year") %>%
+        stringr::str_replace_all("AREAGEOGRAFICA", "Area") %>%
+        stringr::str_replace_all("REGIONE", "Region_description") %>%
+        stringr::str_replace_all("PROVINCIA", "Province_description") %>%
+        stringr::str_replace_all("CODICEISTITUTORIFERIMENTO", "Reference_institute_code") %>%
+        stringr::str_replace_all("DENOMINAZIONEISTITUTORIFERIMENTO", "Reference_institute_name") %>%
+        stringr::str_replace_all("CODICESCUOLA", "School_code") %>%
+        stringr::str_replace_all("DENOMINAZIONESCUOLA", "School_name") %>%
+        stringr::str_replace_all("INDIRIZZOSCUOLA", "School_address") %>%
+        stringr::str_replace_all("CAPSCUOLA", "Postal_code") %>%
+        stringr::str_replace_all("CODICECOMUNESCUOLA", "Cadastral_code") %>%
+        stringr::str_replace_all("DESCRIZIONECOMUNE", "Municipality_description") %>%
+        stringr::str_replace_all("DESCRIZIONECARATTERISTICASCUOLA", "School_feature_description") %>%
+        stringr::str_replace_all("DESCRIZIONETIPOLOGIAGRADOISTRUZIONESCUOLA", "Order_description") %>%
+        stringr::str_replace_all("INDICAZIONESEDEDIRETTIVO", "Headquarters_indication") %>%
+        stringr::str_replace_all("INDICAZIONESEDEOMNICOMPRENSIVO", "Comprehensive_institute_venue_information") %>%
+        stringr::str_replace_all("INDIRIZZOEMAILSCUOLA", "email_address") %>%
+        stringr::str_replace_all("INDIRIZZOPECSCUOLA", "Certified_email_address") %>%
+        stringr::str_replace_all("SITOWEBSCUOLA", "Website") %>%
+        stringr::str_replace_all("SEDESCOLASTICA", "Venue")
+      out[[obj]] <- dat
+    } else{
+      message("Wrong file type:", httr::http_type(response))
     }
-
-    names(dat) <- names(dat) %>% stringr::str_replace_all("ANNOSCOLASTICO", "Year") %>%
-      stringr::str_replace_all("AREAGEOGRAFICA", "Area") %>%
-      stringr::str_replace_all("REGIONE", "Region_description") %>%
-      stringr::str_replace_all("PROVINCIA", "Province_description") %>%
-      stringr::str_replace_all("CODICEISTITUTORIFERIMENTO", "Reference_institute_code") %>%
-      stringr::str_replace_all("DENOMINAZIONEISTITUTORIFERIMENTO", "Reference_institute_name") %>%
-      stringr::str_replace_all("CODICESCUOLA", "School_code") %>%
-      stringr::str_replace_all("DENOMINAZIONESCUOLA", "School_name") %>%
-      stringr::str_replace_all("INDIRIZZOSCUOLA", "School_address") %>%
-      stringr::str_replace_all("CAPSCUOLA", "Postal_code") %>%
-      stringr::str_replace_all("CODICECOMUNESCUOLA", "Cadastral_code") %>%
-      stringr::str_replace_all("DESCRIZIONECOMUNE", "Municipality_description") %>%
-      stringr::str_replace_all("DESCRIZIONECARATTERISTICASCUOLA", "School_feature_description") %>%
-      stringr::str_replace_all("DESCRIZIONETIPOLOGIAGRADOISTRUZIONESCUOLA", "Order_description") %>%
-      stringr::str_replace_all("INDICAZIONESEDEDIRETTIVO", "Headquarters_indication") %>%
-      stringr::str_replace_all("INDICAZIONESEDEOMNICOMPRENSIVO", "Comprehensive_institute_venue_information") %>%
-      stringr::str_replace_all("INDIRIZZOEMAILSCUOLA", "email_address") %>%
-      stringr::str_replace_all("INDIRIZZOPECSCUOLA", "Certified_email_address") %>%
-      stringr::str_replace_all("SITOWEBSCUOLA", "Website") %>%
-      stringr::str_replace_all("SEDESCOLASTICA", "Venue")
-    out[[obj]] <- dat
-
   }
+  if(length(out) == 0L) return(NULL)
 
   res <- do.call(dplyr::bind_rows, out) %>%
     dplyr::relocate(.data$Postal_code, .after = "Municipality_description") %>%

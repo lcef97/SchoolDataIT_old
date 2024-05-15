@@ -7,13 +7,16 @@
 <https://www.istat.it/it/archivio/273176>
 }
 \usage{
-Get_InnerAreas()
+Get_InnerAreas(autoAbort = FALSE)
+}
+\arguments{
+\item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
 }
 \description{
-Retrieves the classification of Italian municipalities into six categories; classes D, E, and F are the so-called internal/inner areas while classes A, B and C are the central areas:
+Retrieves the classification of Italian municipalities into six categories; classes D, E, and F are the so-called internal/inner areas; classes A, B and C are the central areas.
 }
 \details{
 Classes are defined according to these criteria; see the methodological note (in Italian) for more detail:
@@ -31,15 +34,13 @@ The remaining classes are defined in terms of the national distribution of the r
   \item E - Peripheral municipalities, travel time between the third quartile and 97.5th percentile (40'54'' - 1h 6' 54'').
   \item F - Ultra-peripheral municipalities, travel time over the 97.5th percentile (>1h 6' 54'').
 }
+For more information regarding the dataset, it is possible to check the ISTAT methodological note (in Italian) available at <https://www.istat.it/it/files//2022/07/FOCUS-AREE-INTERNE-2021.pdf>
 }
 \examples{
 
 
-InnerAreas <- Get_InnerAreas()
+InnerAreas <- Get_InnerAreas(autoAbort = TRUE)
 
 InnerAreas[, c(1,9,13)]
 
-}
-\references{
-<https://www.istat.it/it/files//2022/07/FOCUS-AREE-INTERNE-2021.pdf> (ISTAT Methodological note)
 }

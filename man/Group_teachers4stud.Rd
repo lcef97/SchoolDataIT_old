@@ -11,6 +11,7 @@ Group_teachers4stud(
   verbose = TRUE,
   input_nstud_raw = NULL,
   input_nstud_aggr = NULL,
+  autoAbort = FALSE,
   ...
 )
 }
@@ -30,6 +31,8 @@ Not necessary if the argument \code{input_nstud_aggr} is provided. If \code{NULL
 
 \item{input_nstud_aggr}{Object of class \code{list}, including two objects of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Group_nstud}}. If \code{NULL}, the function will compute it manually but it will not be saved in the global environment. \code{NULL} by default.}
 
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
+
 \item{...}{Arguments to \code{\link{Group_nstud}} if argument \code{input_nstud_aggr} is not provided}
 }
 \value{
@@ -42,19 +45,24 @@ This function provides the average number of teachers per students in Italian pu
 
 
 \donttest{
-  input_nstud23 <- Get_nstud(2023, filename ="ALUCORSOINDCLASTA")
-  Registry23 <- Get_Registry(2023)
-  School2mun23 <- Get_School2mun(2023, input_Registry = Registry23)
+  input_nstud23 <- Get_nstud(2023, filename ="ALUCORSOINDCLASTA", autoAbort = TRUE)
+  Registry23 <- Get_Registry(2023, autoAbort = TRUE)
+  School2mun23 <- Get_School2mun(2023, input_Registry = Registry23, autoAbort = TRUE)
 
 
   nstud23.aggr <- Group_nstud(Year = 2023, data = input_nstud23,
-    input_Registry2 = Registry23, input_School2mun = School2mun23)
+    input_Registry2 = Registry23, input_School2mun = School2mun23,
+    autoAbort = TRUE)
 
-  input_nteachers23 <- Get_nteachers_prov(2023)
+  input_nteachers23 <- Get_nteachers_prov(2023, autoAbort = TRUE)
 
-  Group_teachers4stud(Year = 2023, input_nteachers = input_nteachers23,
-    input_nstud_aggr = nstud23.aggr)[, -c(1, 2, 10, 11)]
+  teachers4stud <- Group_teachers4stud(Year = 2023,
+                   input_nteachers = input_nteachers23,
+                   input_nstud_aggr = nstud23.aggr, autoAbort = TRUE)
 
+  teachers4stud[, -c(1, 2, 10, 11)]
+
+  summary(teachers4stud)
 }
 
 }

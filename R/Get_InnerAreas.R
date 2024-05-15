@@ -1,7 +1,9 @@
 #' Download the classification of peripheral municipalities
 #'
 #' @description
-#' Retrieves the classification of Italian municipalities into six categories; classes D, E, and F are the so-called internal/inner areas while classes A, B and C are the central areas:
+#' Retrieves the classification of Italian municipalities into six categories; classes D, E, and F are the so-called internal/inner areas; classes A, B and C are the central areas.
+#'
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #'
 #' @return An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
@@ -22,35 +24,50 @@
 #'   \item E - Peripheral municipalities, travel time between the third quartile and 97.5th percentile (40'54'' - 1h 6' 54'').
 #'   \item F - Ultra-peripheral municipalities, travel time over the 97.5th percentile (>1h 6' 54'').
 #' }
-
+#' For more information regarding the dataset, it is possible to check the ISTAT methodological note (in Italian) available at <https://www.istat.it/it/files//2022/07/FOCUS-AREE-INTERNE-2021.pdf>
 #'
 #'
 #' @examples
 #'
 #'
-#' InnerAreas <- Get_InnerAreas()
+#' InnerAreas <- Get_InnerAreas(autoAbort = TRUE)
 #'
 #' InnerAreas[, c(1,9,13)]
 #'
 #' @source  <https://www.istat.it/it/archivio/273176>
-#' @references <https://www.istat.it/it/files//2022/07/FOCUS-AREE-INTERNE-2021.pdf> (ISTAT Methodological note)
+#'
 #'
 #'
 #' @export
 
-Get_InnerAreas <- function(){
+Get_InnerAreas <- function(autoAbort = FALSE){
 
   # This version requires readxl. Contact the developer for the version not requiring it.
-  Check_connection()
+  if(!Check_connection(autoAbort)) return(NULL)
 
   starttime <- Sys.time()
 
   home.ISTAT <-"https://www.istat.it/it/archivio/273176"
-  homepage <- xml2::read_html(home.ISTAT)
+  homepage <- NULL
+  attempt <- 0
+  while(is.null(homepage) && attempt <= 10){
+    homepage <- tryCatch({
+      xml2::read_html(home.ISTAT)
+    }, error = function(e){
+      message("Cannot read the html; ", 10 - attempt,
+              " attempts left. If the problem persists, please contact the mantainer.\n")
+      return(NULL)
+    })
+    attempt <- attempt + 1
+  }
+  if(is.null(homepage)) return(NULL)
   name_pattern <- "Elenco_Comuni_Classi_di_Aree_Interne"
   link <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href") %>% unique()
   link <- grep(name_pattern, link, value = TRUE)
-
+  if(length(link) == 0L){
+    message("Inner areas data not found. We apologise for the inconvenience.")
+    return(NULL)
+  }
 
   temp <- tempdir()
   if(!dir.exists(temp)){
@@ -61,8 +78,16 @@ Get_InnerAreas <- function(){
   while(status != 200){
     base.url <- dirname(home.ISTAT)
     file.url <- xml2::url_absolute(link, base.url)
-    response <- httr::GET(file.url, httr::write_disk(tempfile(fileext = ".xlsx")),  httr::config(timeout = 60))
+    response <- tryCatch({
+      httr::GET(file.url, httr::write_disk(tempfile(fileext = ".xlsx")),  httr::config(timeout = 60))
+    }, error = function(e){
+      message("Error occurred during scraping, attempt repeated ... \n")
+    })
     status <- response$status_code
+    if(status != 200){
+      message("Operation exited with status: ", status, "; operation repeated")
+    }
+    if(is.null(response)) status <- 0
   }
 
   excel <- response$request$output$path

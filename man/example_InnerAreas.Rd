@@ -35,7 +35,8 @@ example_InnerAreas
 }
 \description{
 This dataframe includes the classification of municipalities , from four regions: Molise, Campania, Apulia and Basilicata.
-Only the first 10 columns are included.
+Only the first 10 columns are included;
+some strings in field \code{Municipality_description} including accents have been forced to ASCII.
 The whole dataset can be retrieved with the command \code{Get_InnerAreas()}.
 For the definition of ISTAT inner areas class, see \code{\link{Get_InnerAreas}}
 }

@@ -15,6 +15,7 @@
 #' @param Year Numeric or character value. Reference school year for the data (last available is 2022/23).
 #' Available in the formats: \code{2022}, \code{"2021/2022"}, \code{202122}, \code{20212022}. \code{2023} by default
 #' @param verbose Logical. If \code{TRUE}, the function informs about the time needed. \code{TRUE} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #'
 #'
@@ -34,27 +35,42 @@
 #'
 #'
 #'
-#' data("example_Invalsi23_prov")
-#'
-#'
 #' Util_Invalsi_filter(subj = c("Italian", "Mathematics"), grade = 5, level = "NUTS-3", Year = 2023,
 #'                    WLE = FALSE, data = example_Invalsi23_prov)
+#'
 #' Util_Invalsi_filter(subj = c("Italian", "Mathematics"), grade = 5, level = "NUTS-3", Year = 2023,
 #'                     WLE = TRUE, data = example_Invalsi23_prov)
 #'
+#' Invalsi23_high <- Util_Invalsi_filter(subj = "Italian", grade = c(10,13), level = "NUTS-3",
+#'                                       Year = 2023, data = example_Invalsi23_prov)
 #'
-#' Util_Invalsi_filter(subj = "Italian", grade = c(10,13), level = "NUTS-3", Year = 2023,
-#'                     data = example_Invalsi23_prov)
+#'
+#'  summary(Invalsi23_high)
 #'
 #' @export
 
 Util_Invalsi_filter <- function(data = NULL, subj=c("ELI", "ERE", "ITA", "MAT"), grade = 8, level = "LAU", WLE=FALSE,
-                                Year = 2023, verbose = TRUE){
+                                Year = 2023, verbose = TRUE, autoAbort = FALSE){
 
   starttime <- Sys.time()
 
-  if(is.null(data)){
-    data <- Get_Invalsi_IS(level = level, verbose = verbose)
+  while(is.null(data)){
+    data <- Get_Invalsi_IS(level = level, verbose = verbose, autoAbort = autoAbort)
+    if(is.null(data)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during Invalsi data retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
   }
 
   Y <- year.patternA(Year)
@@ -78,6 +94,12 @@ Util_Invalsi_filter <- function(data = NULL, subj=c("ELI", "ERE", "ITA", "MAT"),
     dplyr::filter(.data$Year == Y) %>%
     dplyr::filter(.data$Grade %in% grade) %>%
     dplyr::filter(.data$Subject %in% subj)
+
+  if(nrow(Invalsi_IS) == 0){
+    message("No Invalsi data found for year: ", Year, ", grade: ", grade, ", subject: ", subj,
+      ". We apologise for the inconvenience. \n")
+    return(NULL)
+  }
 
   if (13 %in% grade | as.numeric(substr(Y, 1, 4)) > 2016 & any(grade >5)){
     WLE <- TRUE

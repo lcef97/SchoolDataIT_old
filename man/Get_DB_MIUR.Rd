@@ -12,7 +12,8 @@ Get_DB_MIUR(
   verbose = TRUE,
   input_Registry = NULL,
   input_AdmUnNames = NULL,
-  show_col_types = FALSE
+  show_col_types = FALSE,
+  autoAbort = FALSE
 )
 }
 \arguments{
@@ -32,6 +33,8 @@ Only  necessary for school years 2015/16, 2017/18 and 2018/19.
 If \code{NULL} and required, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default.}
 
 \item{show_col_types}{Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.}
+
+\item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}. All variables are characters.
@@ -50,9 +53,10 @@ Schools different from primary, middle or high schools are classified as \code{"
 \examples{
 
 \donttest{
-  input_DB23_MIUR <- Get_DB_MIUR(2023)
+  input_DB23_MIUR <- Get_DB_MIUR(2023, autoAbort = TRUE)
 
   input_DB23_MIUR[-c(1,4,6,9)]
+
 }
 
 

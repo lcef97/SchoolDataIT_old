@@ -7,12 +7,14 @@
 <https://www.istat.it/mappa-rischi/getReport.php>
 }
 \usage{
-Get_RiskMap(verbose = TRUE, metadata = FALSE)
+Get_RiskMap(verbose = TRUE, metadata = FALSE, autoAbort = FALSE)
 }
 \arguments{
 \item{verbose}{Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.}
 
 \item{metadata}{Logical. If \code{TRUE}, the function returns also the list of variables with the relevant explanations. \code{FALSE} by default.}
+
+\item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 By default, an object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
@@ -25,7 +27,7 @@ This functions downloads a broad set of indicators covering several categories o
 
 
 \donttest{
-  Get_RiskMap()[-c(1:5)]
+  Get_RiskMap(autoAbort = TRUE)[-c(1:5)]
 }
 
 }

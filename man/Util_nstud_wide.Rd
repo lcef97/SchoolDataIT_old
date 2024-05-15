@@ -11,6 +11,7 @@ Util_nstud_wide(
   UB_nstud_byclass = 99,
   LB_nstud_byclass = 1,
   verbose = TRUE,
+  autoAbort = FALSE,
   ...
 )
 }
@@ -29,7 +30,9 @@ E.g. if the threshold is 19, for all the schools in which there are 19 or less s
 
 \item{verbose}{Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.}
 
-\item{...}{Ellipsis. Arguments to \code{\link{Get_nstud}}, needed if \code{data} is not provided.}
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
+
+\item{...}{Arguments to \code{\link{Get_nstud}}, needed if \code{data} is not provided.}
 }
 \value{
 An object of class  \code{tbl_df}, \code{tbl} and \code{data.frame}
@@ -44,8 +47,6 @@ In the example, we compare the dataframe obtained with the default settings
 }
 \examples{
 
-data("example_input_nstud23")
-
 
 nstud.default <- Util_nstud_wide(example_input_nstud23)
 
@@ -55,6 +56,10 @@ nstud.narrow <- Util_nstud_wide(example_input_nstud23,
 
 nrow(nstud.default)
 nrow(nstud.narrow)
+
+nstud.default
+
+summary(nstud.default)
 
 
 }

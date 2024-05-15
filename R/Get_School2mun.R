@@ -9,7 +9,7 @@
 #'
 #'
 #' @param Year Numeric or character value (last available is 2023).
-#' Available in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{20222023.} \code{2022} by default (other databases are not currently available for 2023)
+#' Available in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{20222023.} \code{2023} by default.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
 #' @param show_col_types Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.
 #' @param input_AdmUnNames Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_AdmUnNames}}
@@ -19,6 +19,7 @@
 #' The school registry corresonding to the year in scope.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 #' \code{NULL} by default
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #' @source \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0101EDIANAGRAFESTA2021}{Buildings registry (2021 onwards)};
 #'  \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0200EDIANAGRAFESTA}{Buindings registry(until 2019)};
@@ -39,41 +40,55 @@
 #' @examples
 #'
 #' \donttest{
-#' Get_School2mun(2023)
+#' Get_School2mun(Year = 2023, autoAbort = TRUE)
 #' }
 #'
 #'
 #' @export
 
 
-Get_School2mun <- function(Year = 2022, show_col_types = FALSE, verbose = TRUE,
-                           input_AdmUnNames = NULL, input_Registry2 = NULL) {
+Get_School2mun <- function(Year = 2023, show_col_types = FALSE, verbose = TRUE,
+                           input_AdmUnNames = NULL, input_Registry2 = NULL, autoAbort = FALSE) {
 
   start.zero <- Sys.time()
 
   pattern <- year.patternB(Year)
   YearMinus1 <- as.numeric(substr(year.patternA(Year),1,4))
-
-  # For some reason, the most accurate cadastral codes are those of the
   if(is.null(input_AdmUnNames)){
-    cat("Mapping cadastral codes to municipality (LAU) codes: \n")
+    if(verbose) cat("Mapping cadastral codes to municipality (LAU) codes: \n")
     input_AdmUnNames <- Get_AdmUnNames(
       Year = ifelse(any(pattern %in% c(year.patternB(2016), year.patternB(2018))), Year, YearMinus1),
-      date = ifelse(any(pattern %in% c(year.patternB(2016), year.patternB(2018))), "01_01_", "30_06_"))
+      date = ifelse(any(pattern %in% c(year.patternB(2016), year.patternB(2018))), "01_01_", "30_06_"),
+      autoAbort = autoAbort)
   }
+  # Case: failure
+  if(is.null(input_AdmUnNames)) return(NULL)
+
 
   temp.R1 <- input_AdmUnNames %>% dplyr::select(.data$Cadastral_code, .data$Municipality_code)
   temp.R2 <- input_AdmUnNames %>% dplyr::select(.data$Cadastral_code, .data$Province_initials, .data$Municipality_code)
 
-  if(verbose){cat("Retrieving registry from the buildings section ...")}
+  if(verbose){cat("Retrieving registry from the buildings section ... \n")}
 
   starttime <- Sys.time()
 
-  Check_connection()
+  if(!Check_connection(autoAbort)) return(NULL)
 
   pattern <- year.patternB(Year)
   home.url <-"https://dati.istruzione.it/opendata/opendata/catalogo/elements1/?area=Edilizia%20Scolastica"
-  homepage <- xml2::read_html(home.url)
+  homepage <- NULL
+  attempt <- 0
+  while(is.null(homepage) && attempt <= 10){
+    homepage <- tryCatch({
+      xml2::read_html(home.url)
+    }, error = function(e){
+      message("Cannot read the html; ", 10 - attempt,
+              " attempts left. If the problem persists, please contact the mantainer.\n")
+      return(NULL)
+    })
+    attempt <- attempt + 1
+  }
+  if(is.null(homepage)) return(NULL)
   name_pattern <- "([0-9]+)\\.(csv)$"
   links <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href") %>%
     unique()
@@ -99,15 +114,27 @@ Get_School2mun <- function(Year = 2022, show_col_types = FALSE, verbose = TRUE,
 
   status <- 0
   while(status != 200){
-    response <- httr::GET(file.url)
+    response <- tryCatch({
+      httr::GET(file.url)
+    }, error = function(e) {
+      message("Error occurred during scraping, attempt repeated ... \n")
+      NULL
+    })
     status <- response$status_code
+    if(is.null(response)){
+      status <- 0
+    }
+    if(status != 200){
+      message("Operation exited with status: ", status, "; operation repeated")
+    }
   }
 
   if (httr::http_type(response) %in% c("application/csv", "text/csv", "application/octet-stream")) {
     input_Registry1 <- readr::read_csv(rawToChar(response$content), show_col_types = FALSE)
   } else {
-    warning(paste("Wrong file type:", httr::http_type(response)) )
-    cat("Failed to download and process:", file_to_download, "\n")
+    message(paste("Wrong file type:", httr::http_type(response)) )
+    message("Failed to download and process:", file_to_download, "\n")
+    return(NULL)
   }
 
   # This is for the province of Naples whose abbreviation is `NA`
@@ -152,14 +179,15 @@ Get_School2mun <- function(Year = 2022, show_col_types = FALSE, verbose = TRUE,
     dplyr::mutate(Municipality_description = stringr::str_to_title(.data$Municipality_description)) %>% unique()
 
   if(is.null(input_Registry2)){
-    if(verbose) cat("Retrieving registry from registry section ... ")
+    if(verbose) cat("Retrieving registry from registry section ... \n ")
     starttime <- Sys.time()
-    input_Registry2 <- Get_Registry(Year)
+    input_Registry2 <- Get_Registry(Year = Year, autoAbort = autoAbort)
     endtime <- Sys.time()
     if(verbose){
       cat(round(difftime(endtime, starttime, units="secs") ,2), "seconds needed for the download \n"  )
     }
   }
+  if(is.null(input_Registry2)) return(NULL)
 
   Registry2 <- input_Registry2 %>% dplyr::select(
     .data$School_code,.data$Cadastral_code, .data$Municipality_description)%>%

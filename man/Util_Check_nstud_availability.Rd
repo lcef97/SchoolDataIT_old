@@ -3,6 +3,10 @@
 \name{Util_Check_nstud_availability}
 \alias{Util_Check_nstud_availability}
 \title{Check how many schools in the school registries are included in the students count dataframe}
+\source{
+\href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0101EDIANAGRAFESTA2021}{Buildings Registry};
+\href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Scuole&datasetId=DS0400SCUANAGRAFESTAT}{Schools Registry}
+}
 \usage{
 Util_Check_nstud_availability(
   data,
@@ -17,7 +21,8 @@ Util_Check_nstud_availability(
   input_InnerAreas = NULL,
   input_Prov_shp = NULL,
   input_AdmUnNames = NULL,
-  input_School2mun = NULL
+  input_School2mun = NULL,
+  autoAbort = FALSE
 )
 }
 \arguments{
@@ -60,6 +65,8 @@ If \code{NULL}, it will be downloaded automatically, but not saved in the global
 
 \item{input_School2mun}{Object of class \code{list} with elements of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_School2mun}}.
 The mapping from school codes to municipality (and province) codes. If \code{NULL}, it will be downloaded automatically, but not saved in the global environment. \code{NULL} by default.}
+
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 An object of class \code{list} including two elements:
@@ -77,18 +84,10 @@ Both the elements are objects of class \code{list} including four elements:
 }
 }
 \description{
-This function checks for which schools listed in the two registries (the one from the buildings section and the proper one from the buildings section)
-the count of students is available. The first registry is indicated as \code{Registry1} and the second one as \code{Registry2}.
+This function checks for which schools listed in the two registries (the buildings registry and the schools registry)
+the count of students is available. The first registry is referred to as as \code{Registry1} and the second one as \code{Registry2}.
 }
 \examples{
-
-
-data("example_input_nstud23")
-data("example_input_Registry23")
-data("example_School2mun23")
-data("example_Prov22_shp")
-
-
 
 nstud23 <- Util_nstud_wide(example_input_nstud23, verbose = FALSE)
 
@@ -98,8 +97,6 @@ Util_Check_nstud_availability(nstud23, Year = 2023,
 
 
 
-}
-\references{
-\href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0101EDIANAGRAFESTA2021}{Buildings Registry};
-\href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Scuole&datasetId=DS0400SCUANAGRAFESTAT}{Schools Registry}
+
+
 }

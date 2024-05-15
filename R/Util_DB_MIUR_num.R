@@ -15,6 +15,7 @@
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. TRUE by default.
 #' @param track_deleted Logical. If \code{TRUE}, the function returns the names of the school not included in the output dataframe. \code{TRUE} by default.
 #' @param flag_outliers Logical. Whether to assign NA to outliers in numeric variables. \code{TRUE} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param ... Additional arguments to the function \code{Get_DB_MIUR} if \code{data} is not provided.
 #'
 #' @details The outliers to be set to \code{NA} if \code{flag_outliers} is active are defined as follows: School area or free area surface of less than 50 squared meters,
@@ -37,27 +38,41 @@
 #'
 #' @examples
 #'
-#' data("example_input_DB23_MIUR")
-#'
 #' library(magrittr)
 #'
 #' DB23_MIUR_num <- example_input_DB23_MIUR %>% Util_DB_MIUR_num(track_deleted = FALSE)
 #'
 #'
 #' DB23_MIUR_num[, -c(1,4,6,8,9,10)]
-#'
+#' summary(DB23_MIUR_num)
 #'
 #'
 #' @export
 
 Util_DB_MIUR_num <- function(data = NULL, include_numerics = TRUE, include_qualitatives = FALSE,
          row_cutout = FALSE, track_deleted = TRUE, verbose = TRUE, col_cut_thresh = 2e+4,
-         flag_outliers = TRUE, ...){
+         flag_outliers = TRUE, autoAbort = FALSE, ...){
 
   starttime <- Sys.time()
 
-  if(is.null(data)) data <- Get_DB_MIUR(...)
-
+  while(is.null(data)) {
+    data <- Get_DB_MIUR(autoAbort = autoAbort, verbose = verbose, ...)
+    if(is.null(data)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during school buildings DB retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
+  }
   y <- as.numeric(data$Year[1])%/%100+1
   startcol <- 10
   uncomma <- function(c, na.rm = FALSE){
@@ -69,7 +84,7 @@ Util_DB_MIUR_num <- function(data = NULL, include_numerics = TRUE, include_quali
   }
   nc <- ncol(data)
   #init.cutout = c("Address_type","Address_name","Civic_number", "Building_status")
-  pattern.out = c("NON DEFINITO","-", "Informazione assente", "Non Comunicato", "ND", "Non richiesto")
+  pattern.out = c("NON DEFINITO","-", "Informazione assente", "Non Comunicato", "ND", "Non richiesto", "IN PARTE")
 
   starttime <- Sys.time()
   if("Adaptation_year" %in% names(data)){

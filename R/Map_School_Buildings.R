@@ -29,6 +29,7 @@
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.s
 #' @param input_shp Object of class \code{sf}, \code{tbl_df}, \code{tbl}, \code{data.frame}. The relevant shapefiles of Italian administrative boudaries,
 #' at the selected level of detail (LAU or NUTS-3). If \code{NULL} it is downloaded automatically but not saved in the global environment. \code{NULL} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param ... If \code{data} is not provided, the arguments to \code{\link{Group_DB_MIUR}}.
 #'
 #'
@@ -42,17 +43,12 @@
 #'
 #'
 #'
-#'   data("example_input_DB23_MIUR")
-#'   data("example_Prov22_shp")
-#'
-#'
 #'
 #'   library(magrittr)
 #'
 #'   DB23_MIUR <- example_input_DB23_MIUR %>%
 #'     Util_DB_MIUR_num(track.deleted = FALSE) %>%
-#'     Group_DB_MIUR(InnerAreas = FALSE, count.missing = FALSE)
-#'
+#'     Group_DB_MIUR(InnerAreas = FALSE, count_missing = FALSE)
 #'
 #'   DB23_MIUR %>% Map_School_Buildings(field = "School_bus",
 #'      order = "Primary",level = "NUTS-3",  plot = "ggplot",
@@ -70,10 +66,6 @@
 #'
 #'
 #'
-#'
-#'
-#'
-#'
 #' @export
 
 
@@ -81,12 +73,27 @@ Map_School_Buildings <- function (data = NULL, field, order = NULL,  level = "LA
                                   region_code = c(1:20), plot = "mapview", pal = "Blues",
                                   col_rev = FALSE, popup_height = 200,
                                   main_pos = "top", main = "", verbose = TRUE,
-                                  input_shp = NULL, ... ) {
+                                  input_shp = NULL, autoAbort = FALSE, ... ) {
   options(dplyr.summarise.inform = FALSE)
 
-  if(is.null(data)){
+  while(is.null(data)){
     if(verbose) cat("Loading input data: \n")
-    data <- Group_DB_MIUR(...)
+    data <- Group_DB_MIUR(autoAbort = autoAbort, ...)
+    if(is.null(data)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during school buildings DB retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
   }
 
   if((is.data.frame(data) & "School_code" %in% names(data)) |
@@ -113,11 +120,26 @@ Map_School_Buildings <- function (data = NULL, field, order = NULL,  level = "LA
   Year <- as.numeric(DB$Year[1])%/%100 + 1
   YearMinus1 <- Year - 1
 
-  if(is.null(input_shp)){
+  while(is.null(input_shp)){
     if (verbose) cat("Loading shapefile: \n")
     input_shp <- Get_Shapefile(Year = ifelse(
       any(year.patternA(Year) %in% c(year.patternA(2016), year.patternA(2018))), Year, YearMinus1),
-      level = level)
+      level = level, autoAbort = autoAbort)
+    if(is.null(input_shp)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during shapefile retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
   }
 
 #  if(level %in% c ("LAU", "Municipality")){

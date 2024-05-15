@@ -11,7 +11,8 @@ Get_nstud(
   Year = 2023,
   filename = c("ALUCORSOETASTA", "ALUCORSOINDCLASTA"),
   verbose = TRUE,
-  show_col_types = FALSE
+  show_col_types = FALSE,
+  autoAbort = FALSE
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ Other file names are the following. The output is not currently supported by the
 \item{verbose}{Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.}
 
 \item{show_col_types}{Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.}
+
+\item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 By default, a list of two \code{tbl_df}, \code{tbl} and \code{data.frame} objects:
@@ -56,7 +59,7 @@ This functions downloads the data regarding the number of students, from the ope
 \examples{
 
 \donttest{
-  Get_nstud(2023, filename = "ALUCORSOINDCLASTA")
+  Get_nstud(2023, filename = "ALUCORSOINDCLASTA", autoAbort = TRUE)
 }
 
 

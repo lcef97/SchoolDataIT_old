@@ -2,7 +2,8 @@
 #'
 #'
 #' This dataframe includes the schools directly identifiable as primary, middle or high school, from four regions: Molise, Campania, Apulia and Basilicata.
-#' Only the first 35 columns are included.
+#' Only the first 35 columns are included. Some strings including accents in fields \code{Other_disturbances_proximity},
+#' \code{Other_specific_criticalities} and \code{Other} have been forced to ASCII.
 #' The whole dataset can be retrieved with the command \code{Get_DB_MIUR(2023)}
 #' @seealso \code{\link{Get_DB_MIUR}}
 #'
@@ -42,12 +43,12 @@
 #'   \item \code{Railway_transport} Character; whether the school ranges 500 meters or less from a train station.
 #'   \item \code{Private_transport} Character; whether the school can be reached by private transport.
 #'   \item \code{Disabled_people_transport} Character; whether the school is provided with disabled people specific transport.
-#'   \item \code{Bicicle_lane} Character; whether the building is in proximity of a bicicle lane.
-#'   \item \code{} Character; whether the building can be reached in any other specific way.
+#'   \item \code{Bicycle_lane} Character; whether the building is in proximity of a bicycle/bike lane.
+#'   \item \code{Other} Character; whether the building can be reached in any other specific way.
 #' }
-#' @source \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/?area=Edilizia+Scolastica}{Homepage}
-#' @references \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0111EDIAMBIENTESTA2021}{cols 10-18}
-#' \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0121EDICOLLEGAMENTISTA2021}{cols 20-27}
+#' @source \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/?area=Edilizia+Scolastica}{Homepage}; more in detail, the dataset blocks are downloaded respectively from:
+#' \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0111EDIAMBIENTESTA2021}{cols 10-18};
+#' \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0121EDICOLLEGAMENTISTA2021}{cols 20-27};
 #' \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/leaf/?area=Edilizia+Scolastica&datasetId=DS0121EDICOLLEGAMENTISTA2021}{cols 28-35}
 #'
 "example_input_DB23_MIUR"

@@ -7,19 +7,23 @@
 #' @param Date Object of class \code{Date}. The date at which it is required to determine if the broad band connection has been activated or not. By default it is the current date.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
 #' @param show_col_types Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.
-#'
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #' @return An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}. The variables \code{BB_Activation_date} and \code{BB_Activation_staus} indicate the activation date and activation status of the broadband connection at the selected date.
 #'
 #' @source \href{https://bandaultralarga.italia.it/scuole-voucher/dashboard-scuole/}{Broadband dashboard}
-#' @references \href{https://bandaultralarga.italia.it/scuole-voucher/progetto-scuole/}{Broadband plan website}
 #'
-#' @details In the example the broadband availability at the beginning of school  year 2022/23 (1st september 2022) is shown.
+#'
+#' @details Ultra - Broadband is defined as everlasting internet connection with a
+#' maximum speed of 1 gigabit per second, with a minimum guaranteed speed of
+#' 100 megabits/second both on the uploading and downloading operations, until
+#' the peering point is reached, as declared on the data provider's \href{https://bandaultralarga.italia.it/scuole-voucher/progetto-scuole/}{website}.
+#' In the example the broadband availability at the beginning of school  year 2022/23 (1st september 2022) is shown.
 #'
 #' @examples
 #'
 #' \donttest{
-#' Broadband_220901 <- Get_BroadBand(Date = as.Date("2022-09-01"))
+#' Broadband_220901 <- Get_BroadBand(Date = as.Date("2022-09-01"), autoAbort = TRUE)
 #'
 #' Broadband_220901
 #'
@@ -32,20 +36,26 @@
 #' @export
 
 
-Get_BroadBand <- function(Date = Sys.Date(), verbose=TRUE,  show_col_types = FALSE){
+Get_BroadBand <- function(Date = Sys.Date(), verbose=TRUE,  show_col_types = FALSE, autoAbort = FALSE){
 
-  Check_connection()
+  if(!Check_connection(autoAbort)) return(NULL)
 
   starttime <- Sys.time()
 
   home.url <- "https://bandaultralarga.italia.it/scuole-voucher/dashboard-scuole/"
-  homepage  <- tryCatch({
-    xml2::read_html(home.url)
-  }, error = function(e) {
-    message("It seems the broadband website is not working.
-            We apologise for the inconvenience. \n")
-    return(NULL)
-  })
+  homepage <- NULL
+  attempt <- 0
+  while(is.null(homepage) && attempt <= 10){
+    homepage <- tryCatch({
+      xml2::read_html(home.url)
+    }, error = function(e){
+      message("Cannot read the html; ", 10 - attempt,
+              " attempts left. If the problem persists, please check if the provider's website is working
+              or contact the package mantainer.\n")
+      return(NULL)
+    })
+    attempt <- attempt + 1
+  }
   if(is.null(homepage)) return(NULL)
 
   links <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href") %>% unique()
@@ -56,15 +66,23 @@ Get_BroadBand <- function(Date = Sys.Date(), verbose=TRUE,  show_col_types = FAL
 
   status <- 0
   while(status != 200){
-    response <- httr::GET(file.url)
+    response <- tryCatch({
+      httr::GET(file.url)
+    }, error = function(e) {
+      message("Error occurred during scraping, attempt repeated ... \n")
+      NULL
+    })
     status <- response$status_code
-    if(verbose & !status %in% c(0, 200)){
-      message(paste("Get_BroadBand Status code = ", status, "retry download:"))
+    if(is.null(response)){
+      status <- 0
+    }
+    if(status != 200){
+      message("Operation exited with status: ", status, "; operation repeated")
     }
   }
 
   if(rawToChar(response$content) == ""){
-    warning("It seems that the no Broadband data is available.
+    message("It seems that Broadband data are not available.
             We apologise for the inconvenience")
     return(NULL)
   }

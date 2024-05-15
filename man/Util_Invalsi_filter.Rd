@@ -11,7 +11,8 @@ Util_Invalsi_filter(
   level = "LAU",
   WLE = FALSE,
   Year = 2023,
-  verbose = TRUE
+  verbose = TRUE,
+  autoAbort = FALSE
 )
 }
 \arguments{
@@ -33,6 +34,8 @@ If an input dataframe is provided, please select the same level of aggregation. 
 Available in the formats: \code{2022}, \code{"2021/2022"}, \code{202122}, \code{20212022}. \code{2023} by default}
 
 \item{verbose}{Logical. If \code{TRUE}, the function informs about the time needed. \code{TRUE} by default.}
+
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}. For all subjects and school grades, the variables indicate:
@@ -51,16 +54,16 @@ Each row corresponds to one territorial unit (either municipality or province); 
 
 
 
-data("example_Invalsi23_prov")
-
-
 Util_Invalsi_filter(subj = c("Italian", "Mathematics"), grade = 5, level = "NUTS-3", Year = 2023,
                    WLE = FALSE, data = example_Invalsi23_prov)
+
 Util_Invalsi_filter(subj = c("Italian", "Mathematics"), grade = 5, level = "NUTS-3", Year = 2023,
                     WLE = TRUE, data = example_Invalsi23_prov)
 
+Invalsi23_high <- Util_Invalsi_filter(subj = "Italian", grade = c(10,13), level = "NUTS-3",
+                                      Year = 2023, data = example_Invalsi23_prov)
 
-Util_Invalsi_filter(subj = "Italian", grade = c(10,13), level = "NUTS-3", Year = 2023,
-                    data = example_Invalsi23_prov)
+
+ summary(Invalsi23_high)
 
 }

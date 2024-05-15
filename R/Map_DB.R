@@ -33,6 +33,7 @@
 #' If the data include the Invalsi census survey, please select a level consistent with the chosen educational grade. \code{"Media"} by default.
 #  @param Invalsi Logical. whether the data to map include the Invalsi survey. \code{TRUE} by default.
 #  @param Invalsi.subj Character. If \code{Invalsi == TRUE}, the school subject(s) to include, among \code{"English_listening"}/\code{"ELI"}, \code{"English_reading"}/\code{"ERE"}, \code{"Italian"}/\code{"Ita"} and \code{"Mathematics"}/\code{"MAT"}. All four by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param ... Additional arguments for the input database, if not provided; see \code{\link{Set_DB}}
 #'
 #'
@@ -43,21 +44,13 @@
 #'
 #'
 #'
-#'
-#' data("example_Prov22_shp")
-#' data("example_input_DB23_MIUR")
-#' data("example_Invalsi23_prov")
-#' data("example_InnerAreas")
-#' data("example_input_nstud23")
-#' data("example_School2mun23")
-#' data("example_AdmUnNames20220630")
-#'
-#' DB23 <- Set_DB(Year = 2023, level = "NUTS-3", input_SchoolBuildings = example_input_DB23_MIUR,
+#' DB23 <- Set_DB(Year = 2023, level = "NUTS-3",
+#'        Invalsi_grade = c(10,13), NA_autoRM = TRUE,
 #'        input_Invalsi_IS = example_Invalsi23_prov, input_nstud = example_input_nstud23,
 #'        input_InnerAreas = example_InnerAreas,
 #'        input_School2mun = example_School2mun23,
 #'        input_AdmUnNames = example_AdmUnNames20220630,
-#'        nteachers = FALSE, BroadBand = FALSE)
+#'        nteachers = FALSE, BroadBand = FALSE, SchoolBuildings = FALSE)
 #'
 #'
 #'
@@ -67,9 +60,6 @@
 #'
 #' Map_DB(DB23, field = "Inner_area", input_shp = example_Prov22_shp, order = "High",
 #'  level = "NUTS-3",col_rev = TRUE, plot = "ggplot")
-#'
-#' Map_DB(DB23, field = "Interurban_public_transport", input_shp = example_Prov22_shp, order = "High",
-#'  level = "NUTS-3", plot = "ggplot")
 #'
 #' Map_DB(DB23, field = "M_Mathematics_10", input_shp = example_Prov22_shp, level = "NUTS-3",
 #'  plot = "ggplot")
@@ -93,7 +83,7 @@ Map_DB <- function(
     main_pos = "top",
     main = "",
     order = NULL,
-    #Invalsi = TRUE,
+    autoAbort = FALSE,
     ...){
 
   #rlang::check_installed("sf", reason = "Package \"sf\" must be installed to manage geometries in shapefiles.")
@@ -101,16 +91,48 @@ Map_DB <- function(
 
   Year.n <- as.numeric(substr(year.patternA(Year),1,4)) + 1
   YearMinus1.n <- Year - 1
-  if(is.null(input_shp)){
+  while(is.null(input_shp)){
     input_shp <- Get_Shapefile(Year = ifelse(
-      Year.n %in% c(2016, 2018), Year.n, YearMinus1.n), level = level, lightShp = TRUE)
+      Year.n %in% c(2016, 2018), Year.n, YearMinus1.n), level = level, lightShp = TRUE,
+      autoAbort = autoAbort)
+    if(is.null(input_shp)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during shapefile retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
   }
 
   #args <- as.list(match.call())[-1]
   #args <- args[which(names(args) %in% names(formals(Set_DB)))]
 
-  if(is.null(data)) data <-
-    Set_DB(Year = Year, level = level, ...)  #do.call(Set_DB, args)
+  while(is.null(data)) {
+    data <- Set_DB(Year = Year, level = level, autoAbort = autoAbort, ...)  #do.call(Set_DB, args)
+    if(is.null(data)){
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during data retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
+    }
+  }
 
   while(! field %in% names(data)){
     message(paste("The variable", field, "does not seem to belong to the current database.
@@ -162,7 +184,7 @@ Map_DB <- function(
       fill.high = "#132B43"
     }
 
-    res.nospatial <- sf::st_drop_geometry(res)
+    #res.nospatial <- sf::st_drop_geometry(res)
 
     if(main_pos == "top"){
       ggplot2::ggplot() + ggplot2::geom_sf(data = res, ggplot2::aes(
@@ -178,7 +200,7 @@ Map_DB <- function(
 
   } else {
 
-    n <- length(unique(unlist(sf::st_drop_geometry(res[, nfield])))) - 1
+    n <- length(unique(unlist(res[, nfield]))) - 1
 
     if (col_rev == FALSE) {
       brew <- grDevices::hcl.colors(n, palette = pal)

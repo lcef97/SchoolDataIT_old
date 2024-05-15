@@ -15,6 +15,7 @@
 #' @param level Character. The level of aggregation of Invalsi census data. Either \code{"NUTS-3"}, \code{"Province"}, \code{"LAU"}, \code{"Municipality"}. \code{"LAU"} by default.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
 #' @param show_col_types Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #' @return An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}
 #'
@@ -26,89 +27,77 @@
 #'
 #' @examples
 #' \donttest{
-#' Get_Invalsi_IS(level = "NUTS-3")
+#' Get_Invalsi_IS(level = "NUTS-3", autoAbort = TRUE)
 #' }
 #'
 #'
 #' @export
 
-Get_Invalsi_IS<- function(level = "LAU", verbose = TRUE, show_col_types = FALSE){
+Get_Invalsi_IS <- function(level = "LAU", verbose = TRUE, show_col_types = FALSE, autoAbort = FALSE){
 
-  Check_connection()
+  if(!Check_connection(autoAbort)) return(NULL)
 
   starttime <- Sys.time()
   if (level %in% c("Municipality", "LAU")){
-
     nCol <- 10
-    #Ord <- 5
     if (verbose) cat("Retrieving Invalsi census data for municipalities: \n")
     url.invalsi <- "https://serviziostatistico.invalsi.it/invalsi_ss_data/dati-comunali-di-popolazione-comune-del-plesso/"
     name_pattern <- "report_comuni_plessi-2.csv"
-
   } else if (level %in%c("Province", "NUTS-3") ){
-
     nCol <- 11
-    #Ord <- 4
     if (verbose) cat("Retrieving Invalsi census data for provinces")
     url.invalsi <- "https://serviziostatistico.invalsi.it/invalsi_ss_data/dati-provinciali-di-popolazione/"
     name_pattern <- "matrice_medie_provinciali-3.csv"
-
   }
 
   homepage <- NULL
   while(is.null(homepage)){
     homepage <- tryCatch({
       xml2::read_html(url.invalsi)
-      }, error = function(e){
-        NULL
-      })
+    }, error = function(e){
+      NULL
+    })
   }
 
-  get.Invalsi <- function(){
-    attempt <- 0
-    while (attempt <= 10){
+  Invalsi_IS <- NULL
+  status <- 0
+  attempt <- 0
+  while(status != 200 && attempt <= 10){
+    link <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href")
+    link <- grep(name_pattern, link, value = TRUE) %>% unique()
+    response <- tryCatch({
+      httr::GET(link)
+    }, error = function(e) {
+      message("Error occurred during scraping, attempt repeated ... \n")
+      NULL
+    })
+    if(is.null(response)){
       status <- 0
-      while(status != 200){
-        link <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href")
-        link <- grep(name_pattern, link, value = TRUE) %>% unique()
-
-        response <- tryCatch({
-          httr::GET(link)
-        }, error = function(e) {
-          message("Error occurred during scraping, attempt repeated ... \n")
-          NULL
-        })
-        if(is.null(response)){
-          status <- 0
-        }else{
-          status <- response$status_code
-          if(status != 200) {
-            message("Download status ", status, ", retry:")
+    }else{
+      status <- response$status_code
+      if(status != 200) {
+        if(!autoAbort){
+          message("Error occurred; connection exited with status ", status, " ; ", 10 - attempt, " attempts left \n",
+                  "To abort the operation, press `A`; to hold on press any key \n")
+          holdOn <- readline(prompt = "    ")
+          if(holdOn == "A") {
+            message("You chose to abort the operation. We apologise for the inconvenience.")
+            return(NULL)
           }
-        }
+        } else return(NULL)
       }
-      if(verbose) cat("Encoding raw content in UTF-8 \n")
-      content.UTF8 <- iconv(rawToChar(response$content), from = "ISO-8859-1", to = "UTF-8")
-      DB <- readr::read_delim(content.UTF8, delim = ";",
-                              show_col_types = show_col_types, locale = readr::locale(decimal_mark = ","))
-      if(is.data.frame(DB)){
-        #if(floor(log10(nrow(DB))) == Ord & ncol(DB) == nCol ){
-        if(verbose) cat("Data successfully imported as data.frame \n")
-        return(DB)
-      } else{
-        message("Internal error: wrong object dimensions. Whole procedure is re-run")
-      }
-      #} else {
-      #  message("Internal error: the function produced data of type: ",
-      #          paste(class(Invalsi_IS), collapse = ", ", ". Whole procedure is re-run"))
-      #}
-      message(paste("Attempt", attempt, "failed; ", 10-attempt, "are left befor aborting"))
-      attempt <- attempt + 1
     }
-    stop("Max retries exceeded. Operation aborted.")
+    attempt <- attempt + 1
   }
-
-  Invalsi_IS <- get.Invalsi()
+  if(status == 200){
+    if(verbose) cat("Encoding raw content in UTF-8 \n")
+    content.UTF8 <- iconv(rawToChar(response$content), from = "ISO-8859-1", to = "UTF-8")
+    Invalsi_IS <- readr::read_delim(content.UTF8, delim = ";",
+                                    show_col_types = show_col_types, locale = readr::locale(decimal_mark = ","))
+  } else {
+    message("Maximum (10) attempts exceeded. We apologise for the inconvenience.")
+    return(NULL)
+  }
 
   Invalsi_IS[,c((nCol-4):nCol)] <- Invalsi_IS[,c((nCol-4):nCol)] %>%
     apply(MARGIN = 2, FUN = function(x){as.numeric(gsub(",", ".", x))} )

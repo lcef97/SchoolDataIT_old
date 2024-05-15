@@ -10,16 +10,17 @@
 }
 \usage{
 Get_School2mun(
-  Year = 2022,
+  Year = 2023,
   show_col_types = FALSE,
   verbose = TRUE,
   input_AdmUnNames = NULL,
-  input_Registry2 = NULL
+  input_Registry2 = NULL,
+  autoAbort = FALSE
 )
 }
 \arguments{
 \item{Year}{Numeric or character value (last available is 2023).
-Available in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{20222023.} \code{2022} by default (other databases are not currently available for 2023)}
+Available in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{20222023.} \code{2023} by default.}
 
 \item{show_col_types}{Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.}
 
@@ -33,6 +34,8 @@ If \code{NULL}, it will be downloaded automatically, but not saved in the global
 The school registry corresonding to the year in scope.
 If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 \code{NULL} by default}
+
+\item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 An object of class \code{list}, including 4 elements:
@@ -54,7 +57,7 @@ This function associates the relevant municipality codes to all the schools list
 \examples{
 
 \donttest{
-Get_School2mun(2023)
+Get_School2mun(Year = 2023, autoAbort = TRUE)
 }
 
 

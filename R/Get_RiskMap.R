@@ -4,6 +4,7 @@
 #'
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
 #' @param metadata Logical. If \code{TRUE}, the function returns also the list of variables with the relevant explanations. \code{FALSE} by default.
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #'
 #' @examples
@@ -11,7 +12,7 @@
 #'
 #'
 #' \donttest{
-#'   Get_RiskMap()[-c(1:5)]
+#'   Get_RiskMap(autoAbort = TRUE)[-c(1:5)]
 #' }
 #'
 #' @source <https://www.istat.it/mappa-rischi/getReport.php>
@@ -21,18 +22,30 @@
 #'
 #'
 
-Get_RiskMap <- function(verbose=TRUE, metadata = FALSE){
+Get_RiskMap <- function(verbose=TRUE, metadata = FALSE, autoAbort = FALSE){
 
-  # This version requires readxl. Contact the developer for the version that does not need it
-  Check_connection()
+  if(!Check_connection(autoAbort)) return(NULL)
+
 
   start.zero <- Sys.time()
   url <- "https://www.istat.it/mappa-rischi/getReport.php"
   status <- 0
   while(status != 200){
-    response <- httr::GET(url, query = list(
-      "paramsSelected[dateFrom]" = "01/01/2018","paramsSelected[fileType]" = "xlsx"))
+
+    response <- tryCatch({
+      httr::GET(url, query = list(
+        "paramsSelected[dateFrom]" = "01/01/2018","paramsSelected[fileType]" = "xlsx"))
+    }, error = function(e) {
+      message("Error occurred during scraping, attempt repeated ... \n")
+      NULL
+    })
     status <- response$status_code
+    if(is.null(response)){
+      status <- 0
+    }
+    if(status != 200){
+      message("Operation exited with status: ", status, "; operation repeated")
+    }
   }
   temp <- tempdir()
   if(!dir.exists(temp)){
