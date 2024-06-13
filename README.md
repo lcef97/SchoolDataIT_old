@@ -21,6 +21,10 @@ Then, the command for the installation is:
 ``` r
 devtools::install_github("lcef97/SchoolDataIT")
 ```
+If you want to force R not to upgrade the dependencies, use instead:
+``` r
+devtools::install_github("lcef97/SchoolDataIT", upgrade = "never")
+```
 
 ## Changes to the version on CRAN
 
