@@ -2,8 +2,8 @@
 #'
 #' @description  This function associates the relevant municipality codes to all the schools listed in the two main registries provided by the Italian Ministry of Education, University and Research, namely:
 #'  \itemize{
-#'    \item The registry of school buildings, here referred to as \code{Registry1} (\code{\link{Get_DB_MIUR}})
-#'    \item The official schools registry, here referred to as \code{Registry2} (see \code{\link{Get_Registry}})
+#'    \item The registry of school buildings, here referred to as \code{Registry_from_buildings} (\code{\link{Get_DB_MIUR}})
+#'    \item The official schools registry, here referred to as \code{Registry_from_registry} (see \code{\link{Get_Registry}})
 #'  }
 #'
 #'
@@ -15,7 +15,7 @@
 #' @param input_AdmUnNames Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_AdmUnNames}}
 #' The ISTAT file including all the administrative units codes for the year in scope.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment. \code{NULL} by default.
-#' @param input_Registry2 Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_Registry}}
+#' @param input_Registry Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_Registry}}
 #' The school registry corresonding to the year in scope.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 #' \code{NULL} by default
@@ -28,8 +28,8 @@
 #'
 #' @return An object of class \code{list}, including 4 elements:
 #' \itemize{
-#'   \item \code{$Registry1}: Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the schools listed in the buildings registry
-#'   \item \code{$Registry2}: Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the schools listed in the schools registry
+#'   \item \code{$Registry_from_buildings}: Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the schools listed in the buildings registry
+#'   \item \code{$Registry_from_registry}: Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the schools listed in the schools registry
 #'   \item \code{$Any}: Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}: schools listed anywhere
 #'   \item \code{$Both}: Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}: schools listed in both the sections
 #'
@@ -48,7 +48,7 @@
 
 
 Get_School2mun <- function(Year = 2023, show_col_types = FALSE, verbose = TRUE,
-                           input_AdmUnNames = NULL, input_Registry2 = NULL, autoAbort = FALSE) {
+                           input_AdmUnNames = NULL, input_Registry = NULL, autoAbort = FALSE) {
 
   start.zero <- Sys.time()
 
@@ -178,18 +178,18 @@ Get_School2mun <- function(Year = 2023, show_col_types = FALSE, verbose = TRUE,
                   .data$Municipality_code, .data$Municipality_description) %>%
     dplyr::mutate(Municipality_description = stringr::str_to_title(.data$Municipality_description)) %>% unique()
 
-  if(is.null(input_Registry2)){
+  if(is.null(input_Registry)){
     if(verbose) cat("Retrieving registry from registry section ... \n ")
     starttime <- Sys.time()
-    input_Registry2 <- Get_Registry(Year = Year, autoAbort = autoAbort)
+    input_Registry <- Get_Registry(Year = Year, autoAbort = autoAbort)
     endtime <- Sys.time()
     if(verbose){
       cat(round(difftime(endtime, starttime, units="secs") ,2), "seconds needed for the download \n"  )
     }
   }
-  if(is.null(input_Registry2)) return(NULL)
+  if(is.null(input_Registry)) return(NULL)
 
-  Registry2 <- input_Registry2 %>% dplyr::select(
+  Registry2 <- input_Registry %>% dplyr::select(
     .data$School_code,.data$Cadastral_code, .data$Municipality_description)%>%
     dplyr::left_join(temp.R2, by = "Cadastral_code") %>%
     dplyr::select(-.data$Cadastral_code) %>%

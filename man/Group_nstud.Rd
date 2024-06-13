@@ -14,7 +14,7 @@ Group_nstud(
   ord_InnerAreas = FALSE,
   check_ggplot = FALSE,
   missing_to_1 = FALSE,
-  input_Registry2 = NULL,
+  input_Registry = NULL,
   input_InnerAreas = NULL,
   input_Prov_shp = NULL,
   input_School2mun = NULL,
@@ -35,7 +35,7 @@ Available in the formats: \code{2022}, \code{"2022/2023"}, \code{"202223"}, \cod
 
 \item{verbose}{Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.}
 
-\item{check_registry}{Character. If \code{check == TRUE}, the school registries included in the \code{input_School2mun} object (see \code{\link{Get_School2mun}}) whose availability has to be checked. Either \code{"Registry1"} (buildings section), \code{"Registry2"} (registry section), \code{"Any"} or \code{"Both"}. \code{"Any"} by default.}
+\item{check_registry}{Character. If \code{check == TRUE}, the school registries included in the \code{input_School2mun} object (see \code{\link{Get_School2mun}}) whose availability has to be checked. Either \code{"Registry_from_buildings"} (buildings section), \code{"Registry_from_registry"} (registry section), \code{"Any"} or \code{"Both"}. \code{"Any"} by default.}
 
 \item{InnerAreas}{Logical. If \code{check == TRUE}, Whether it must be checked if municipalities belong to Inner areas or not. \code{TRUE} by default.}
 
@@ -46,8 +46,8 @@ Available in the formats: \code{2022}, \code{"2022/2023"}, \code{"202223"}, \cod
 
 \item{missing_to_1}{Logical. Only needed if \code{data} is not provided in wide format. Whether the number of classes should be imputed to 1 when it is missing; see \code{\link{Util_nstud_wide}}. \code{FALSE} by default.}
 
-\item{input_Registry2}{Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_Registry}}
-If \code{check == TRUE}, the school registry from the registry section.
+\item{input_Registry}{Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_Registry}}
+If \code{check == TRUE}, the school registry (the properly said one, from the registry section).
 If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 \code{NULL} by default}
 
@@ -94,7 +94,7 @@ Qualitative values, if included, are summarised by the mode. Summary measures do
 Year <- 2023
 
 nstud23_aggr <- Group_nstud(data = example_input_nstud23, Year = Year,
-                           input_Registry2 = example_input_Registry23,
+                           input_Registry = example_input_Registry23,
                            InnerAreas = FALSE,  input_School2mun = example_School2mun23)
 
 summary(nstud23_aggr$Municipality_data[,c(46,47,48)])

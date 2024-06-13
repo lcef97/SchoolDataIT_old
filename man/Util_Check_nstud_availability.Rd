@@ -17,7 +17,7 @@ Util_Check_nstud_availability(
   toplot_registry = "Any",
   InnerAreas = TRUE,
   ord_InnerAreas = FALSE,
-  input_Registry2 = NULL,
+  input_Registry = NULL,
   input_InnerAreas = NULL,
   input_Prov_shp = NULL,
   input_AdmUnNames = NULL,
@@ -37,14 +37,14 @@ Available in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{
 
 \item{ggplot}{Logical. If \code{TRUE}, the function displays a static map of the availability of the students number by province (but it does not save the ggplot object into the global environment). \code{TRUE} by default.}
 
-\item{toplot_registry}{Character. If the \code{ggplot} option is chosen, the students number availability of which registry must be plotted; either \code{"Registry1"}, \code{"Registry2"}, \code{"Any"} or \code{"Both"}. \code{"Any"} by default.}
+\item{toplot_registry}{Character. If the \code{ggplot} option is chosen, the students number availability of which registry must be plotted; either \code{"Registry_from_buildings"}, \code{"Registry_from_registry"}, \code{"Any"} or \code{"Both"}. \code{"Any"} by default.}
 
 \item{InnerAreas}{Logical. Whether it must be checked if municipalities belong to inner areas or not. \code{TRUE} by default.}
 
 \item{ord_InnerAreas}{Logical. Whether the inner areas classification should be treated as an ordinal variable rather than as a categorical one (see \code{\link{Get_InnerAreas}} for the classification).
 \code{FALSE} by default.}
 
-\item{input_Registry2}{Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_Registry}}
+\item{input_Registry}{Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_Registry}}
 The school registry from the registry section.
 If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 \code{NULL} by default}
@@ -77,22 +77,22 @@ An object of class \code{list} including two elements:
 Both the elements are objects of class \code{list} including four elements:
 
 \itemize{
-  \item \code{$Registry1}: object of class of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the availability of the number of students in the schools listed in the buildings section.
-  \item \code{$Registry2}: object of class of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the availability of the number of students in the schools listed in the registry section.
+  \item \code{$Registry_from_buildings}: object of class of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the availability of the number of students in the schools listed in the buildings section.
+  \item \code{$Registry_from_registry}: object of class of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the availability of the number of students in the schools listed in the registry section.
   \item \code{$Any}: object of class of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the availability of the number of students in the schools listed anywhere.
   \item \code{$Both}: object of class of class \code{tbl_df}, \code{tbl} and \code{data.frame}: the availability of the number of students in the schools listed in both sections.
 }
 }
 \description{
-This function checks for which schools listed in the two registries (the buildings registry and the schools registry)
-the count of students is available. The first registry is referred to as as \code{Registry1} and the second one as \code{Registry2}.
+This function checks for which schools listed in the two registries (the buildings registry and the properly said schools registry)
+the count of students is available. The first registry is referred to as as \code{Registry_from_buildings} and the second one as \code{Registry_from_registry}.
 }
 \examples{
 
 nstud23 <- Util_nstud_wide(example_input_nstud23, verbose = FALSE)
 
 Util_Check_nstud_availability(nstud23, Year = 2023,
-  input_Registry2 = example_input_Registry23, InnerAreas = FALSE,
+  input_Registry = example_input_Registry23, InnerAreas = FALSE,
   input_School2mun = example_School2mun23, input_Prov_shp = example_Prov22_shp)
 
 

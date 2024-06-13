@@ -158,12 +158,12 @@ Map_DB <- function(
   if(level %in% c("LAU", "Municipality")){
     res <- input_shp %>% dplyr::select(.data$COD_REG, .data$PRO_COM_T) %>%
       rename_by_idx(c(1,2), into = c("Region_code", "Municipality_code")) %>%
-      dplyr::left_join(data, by= "Municipality_code") %>% #dplyr::select(-.data$geometry) %>%
+      dplyr::left_join(data, by= "Municipality_code") %>%
       dplyr::filter(.data$Region_code %in% region_code)
   } else {
     res <- input_shp %>% dplyr::select(.data$COD_REG, .data$COD_PROV) %>%
       rename_by_idx(c(1,2), into = c("Region_code", "Province_code")) %>%
-      dplyr::left_join(data,by = "Province_code") %>% #dplyr::select(-.data$geometry) %>%
+      dplyr::left_join(data,by = "Province_code") %>%
       dplyr::filter(.data$Region_code %in% region_code)
   }
 
@@ -200,7 +200,8 @@ Map_DB <- function(
 
   } else {
 
-    n <- length(unique(unlist(res[, nfield]))) - 1
+    n <- length(unique(unlist(dplyr::select(dplyr::filter(
+      data, .data$Province_code %in% res$Province_code), field)))) - 1
 
     if (col_rev == FALSE) {
       brew <- grDevices::hcl.colors(n, palette = pal)

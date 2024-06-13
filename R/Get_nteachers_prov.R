@@ -77,7 +77,7 @@ Get_nteachers_prov <- function(Year = 2023, verbose = TRUE, show_col_types = FAL
       if (!is.na(numpart) & grepl(pattern, numpart) & !string %in% files_to_download &
           any(stringr::str_detect(chrpart, filename))){
         files_to_download <- append(files_to_download, string)
-        cat("Found ", string, " as element ",length(files_to_download), "\n")
+        if(verbose) cat("Found ", string, " as element ",length(files_to_download), "\n")
       }
     }
   }

@@ -12,14 +12,14 @@
 #' Available in the formats: \code{2022}, \code{"2022/2023"}, \code{"202223"}, \code{"20222023"}. \code{2023} by default
 #' @param check Logical. If \code{TRUE}, the function runs the test of the students number availability across all school included in the school registries (see \code{\link{Util_Check_nstud_availability}}). \code{TRUE} by default
 #' @param check_ggplot Logical. If \code{check == TRUE}, whether to display or not a static map of the availability of the students number by province; see also \code{\link{Util_Check_nstud_availability}}. \code{TRUE} by default.
-#' @param check_registry Character. If \code{check == TRUE}, the school registries included in the \code{input_School2mun} object (see \code{\link{Get_School2mun}}) whose availability has to be checked. Either \code{"Registry1"} (buildings section), \code{"Registry2"} (registry section), \code{"Any"} or \code{"Both"}. \code{"Any"} by default.
+#' @param check_registry Character. If \code{check == TRUE}, the school registries included in the \code{input_School2mun} object (see \code{\link{Get_School2mun}}) whose availability has to be checked. Either \code{"Registry_from_buildings"} (buildings section), \code{"Registry_from_registry"} (registry section), \code{"Any"} or \code{"Both"}. \code{"Any"} by default.
 #' @param InnerAreas Logical. If \code{check == TRUE}, Whether it must be checked if municipalities belong to Inner areas or not. \code{TRUE} by default.
 #' @param ord_InnerAreas Logical. If \code{check == TRUE} and \code{InnerAreas == TRUE}, whether the Inner areas classification should be treated as an ordinal variable rather than as a categorical one (see \code{\link{Get_InnerAreas}} for the classification).
 #' \code{FALSE} by default.
 #' @param missing_to_1 Logical. Only needed if \code{data} is not provided in wide format. Whether the number of classes should be imputed to 1 when it is missing; see \code{\link{Util_nstud_wide}}. \code{FALSE} by default.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
-#' @param input_Registry2 Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_Registry}}
-#' If \code{check == TRUE}, the school registry from the registry section.
+#' @param input_Registry Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_Registry}}
+#' If \code{check == TRUE}, the school registry (the properly said one, from the registry section).
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 #' \code{NULL} by default
 #' @param input_InnerAreas Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
@@ -60,7 +60,7 @@
 #' Year <- 2023
 #'
 #' nstud23_aggr <- Group_nstud(data = example_input_nstud23, Year = Year,
-#'                            input_Registry2 = example_input_Registry23,
+#'                            input_Registry = example_input_Registry23,
 #'                            InnerAreas = FALSE,  input_School2mun = example_School2mun23)
 #'
 #' summary(nstud23_aggr$Municipality_data[,c(46,47,48)])
@@ -75,7 +75,7 @@ Group_nstud <- function(data = NULL, Year = 2023,
                         check = TRUE, verbose = TRUE, check_registry = "Any",
                         InnerAreas = TRUE,
                         ord_InnerAreas = FALSE, check_ggplot = FALSE,
-                        missing_to_1 = FALSE, input_Registry2 = NULL,
+                        missing_to_1 = FALSE, input_Registry = NULL,
                         input_InnerAreas = NULL, input_Prov_shp = NULL,
                         input_School2mun = NULL, input_AdmUnNames = NULL,
                         autoAbort = FALSE, ...) {
@@ -117,7 +117,7 @@ Group_nstud <- function(data = NULL, Year = 2023,
   while(is.null(input_School2mun)){
     input_School2mun <- Get_School2mun(
       Year = Year,verbose = verbose,
-      input_Registry2 = input_Registry2, input_AdmUnNames = input_AdmUnNames,
+      input_Registry = input_Registry, input_AdmUnNames = input_AdmUnNames,
       autoAbort = autoAbort)
     if(is.null(input_School2mun)){
       if(!autoAbort){
@@ -200,7 +200,7 @@ Group_nstud <- function(data = NULL, Year = 2023,
                                       ggplot = check_ggplot,
                                       verbose = verbose, InnerAreas = InnerAreas,
                                       ord_InnerAreas = ord_InnerAreas,
-                                      input_Registry2 = input_Registry2, input_AdmUnNames = NULL,
+                                      input_Registry = input_Registry, input_AdmUnNames = NULL,
                                       input_InnerAreas = input_InnerAreas,
                                       input_Prov_shp = input_Prov_shp, input_School2mun = input_School2mun,
                                       autoAbort = autoAbort)

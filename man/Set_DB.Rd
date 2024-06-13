@@ -110,7 +110,7 @@ see also \code{\link{Util_nstud_wide}}. \code{19} by default.}
 
 \item{nstud_check}{Logical. If \code{nstud == TRUE}, whether to check the students number availability across all school included in the school registries (see \code{\link{Util_Check_nstud_availability}}). \code{TRUE} by default.}
 
-\item{nstud_check_registry}{Character. If \code{nstud == TRUE} and \code{nstud_check == TRUE}, the school registries whose availability has to be checked. Either \code{"Registry1"} (buildings registry), \code{"Registry 2"} (proper registry), \code{"Any"} or \code{"Both"}. \code{"Any"} by default.}
+\item{nstud_check_registry}{Character. If \code{nstud == TRUE} and \code{nstud_check == TRUE}, the school registries whose availability has to be checked. Either \code{"Registry_from_buildings"} (buildings registry), \code{"Registry_from_registry"} (proper registry), \code{"Any"} or \code{"Both"}. \code{"Any"} by default.}
 
 \item{BroadBand_impute_missing}{Whether the schools not included in the Broadband dataset must be considered in the total of schools (i.e. the denominator to the Broadband availability indicator). \code{TRUE} by default.}
 

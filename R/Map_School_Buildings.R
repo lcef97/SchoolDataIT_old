@@ -241,7 +241,9 @@ Map_School_Buildings <- function (data = NULL, field, order = NULL,  level = "LA
     }
   } else {
 
-    n <- length(unique(unlist(sf::st_drop_geometry(res[,nfield])))) - 1
+    #n <- length(unique(unlist(sf::st_drop_geometry(res[,nfield])))) - 1
+    n <- length(unique(unlist(dplyr::select(dplyr::filter(
+      dat.R, .data$Province_code %in% res$Province_code), field)))) - 1
     if (col_rev == FALSE) {
       brew <- grDevices::hcl.colors(n, palette = pal)
     } else {

@@ -5,3 +5,11 @@ data/desktop\.ini$
 man/desktop\.ini$
 R/desktop\.ini$
 ^\.github$
+^\.Rhistory$
+^\.gitignore$
+^R/\.Rhistory$
+^\.\.Rcheck$
+^\.git$
+^data/desktop\.ini$
+^\./\.\.Rcheck$
+^\.\.Rcheck$

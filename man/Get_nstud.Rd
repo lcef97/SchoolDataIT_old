@@ -28,7 +28,7 @@ By default it is \code{c("ALUCORSOETASTA", "ALUCORSOINDCLASTA")}, which are the 
 Other file names are the following. The output is not currently supported by the remainder of the functions involving the number of students.
 
 
-\code{"ALUITASTRACITSTA"} for the number of Italian and foreing students in public schools
+\code{"ALUITASTRACITSTA"} for the number of Italian and foreign students in public schools
 
 
 \code{"ALUSECGRADOINDSTA"} for the number of students of public schools by high school address

@@ -35,7 +35,7 @@
 #'
 #'
 #'   nstud23.aggr <- Group_nstud(Year = 2023, data = input_nstud23,
-#'     input_Registry2 = Registry23, input_School2mun = School2mun23,
+#'     input_Registry = Registry23, input_School2mun = School2mun23,
 #'     autoAbort = TRUE)
 #'
 #'   input_nteachers23 <- Get_nteachers_prov(2023, autoAbort = TRUE)

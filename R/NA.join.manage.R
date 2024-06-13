@@ -1,6 +1,6 @@
 #' @keywords internal
 #'
-NA.join.manage <- function(data, lastcol, NA_autoRM = NULL){
+NA.join.manage <- function(data, lastcol, NA_autoRM = NULL, verbose = TRUE){
   na.rm <- NULL
   if(!is.null(NA_autoRM)){
     if(NA_autoRM %in% c("Y", "y", "YES", "yes", "Yes", 1, "1", TRUE, "TRUE")){
@@ -16,13 +16,13 @@ NA.join.manage <- function(data, lastcol, NA_autoRM = NULL){
   }
 
   if (toupper(na.rm) == "Y") {
-    cat("NAs deleted \n")
+    if(verbose) cat("NAs deleted \n")
     data <- data[-which(apply(data[-c(1:lastcol)], MARGIN = 1, function(x) all(is.na(x)))), ]
   } else if (toupper(na.rm) == "A"){
     data <- data[,c(1:lastcol)]
-    cat("You chose to abort the join \n")
+    if(verbose) cat("You chose to abort the join \n")
   } else {
-    cat("NAs kept in \n")
+    if(verbose) cat("NAs kept in \n")
   }
 
   return(data)

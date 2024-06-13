@@ -15,7 +15,7 @@
 #' Other file names are the following. The output is not currently supported by the remainder of the functions involving the number of students.
 #'
 #'
-#' \code{"ALUITASTRACITSTA"} for the number of Italian and foreing students in public schools
+#' \code{"ALUITASTRACITSTA"} for the number of Italian and foreign students in public schools
 #'
 #'
 #' \code{"ALUSECGRADOINDSTA"} for the number of students of public schools by high school address
@@ -169,14 +169,14 @@ Get_nstud <- function(Year = 2023, filename = c("ALUCORSOETASTA", "ALUCORSOINDCL
   input.nstud0 <- lapply(input.nstud0, function(x){
     for (j in (1:ncol(x))){
       if (names(x)[j] %in% tabrename.nstud$Input){
-        names(x)[j] <- tabrename.nstud[which(tabrename.nstud$Input == names(x)[j]),2]
+        names(x)[j] <- tabrename.nstud[which(tabrename.nstud$Input == names(x)[j]), 2]
       }
     }
     return(x)
   })
 
   endtime <- Sys.time()
-  cat(paste(difftime(endtime, start.zero, units="secs"), " seconds needed to retrieve students number data \n" ) )
+  if(verbose) cat(paste(difftime(endtime, start.zero, units="secs"), " seconds needed to retrieve students number data \n" ) )
 
   return(input.nstud0)
 }
