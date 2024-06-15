@@ -1,5 +1,5 @@
 # SchoolDataIT 0.1.3
-* Fixed bug due to geometry field in functions 'Map_DB' and 'Map_SchoolBuildings'
+* Fixed bug due to geometry field in functions 'Map_DB' and 'Map_SchoolBuildings'; corrected argument 'col.rev' to 'col_rev' in function 'Map_Invalsi'
 
 # SchoolDataIT 0.1.2
 

@@ -26,7 +26,7 @@
 #' @param plot Character. The type of map to display; either \code{"mapview"} for interactive maps, or \code{"ggplot"} for static maps. \code{"mapview"} by default.
 #' @param pal Character. The palette to use if the \code{"mapview"} mode is chose. \code{"Blues"} by default.
 #' @param WLE Logical. Whether the variable to chose should be the average WLE score rather that the percentage of sufficient tests, if both are available. \code{FALSE} by default
-#' @param col.rev Logical. Whether the scale of the colour palette should be reverted or not, if the \code{mapview} mode is chosen. \code{FALSE} by default
+#' @param col_rev Logical. Whether the scale of the colour palette should be reverted or not, if the \code{mapview} mode is chosen. \code{FALSE} by default
 #' @param popup_height Numeric. The height of the popup table in terms of pixels if the \code{"mapview"} mode is chosen. \code{200} by default.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
 #' @param data Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
@@ -61,7 +61,7 @@
 
 Map_Invalsi <- function(Year = 2023, data = NULL, subj_toplot = "ITA", grade = 8, level = "LAU",
                         main = "", main_pos = "top", region_code = c(1:20), plot="mapview", pal = "Blues",
-                        WLE = FALSE, col.rev = FALSE, popup_height = 200, verbose = TRUE,
+                        WLE = FALSE, col_rev = FALSE, popup_height = 200, verbose = TRUE,
                         input_shp = NULL, autoAbort = FALSE){
 
   if (length(subj_toplot) > 1){
@@ -148,7 +148,7 @@ Map_Invalsi <- function(Year = 2023, data = NULL, subj_toplot = "ITA", grade = 8
   if (plot =="mapview"){
 
     n <- length(unique(res$X)) - 1
-    if( col.rev == FALSE){
+    if( col_rev == FALSE){
       brew <- grDevices::hcl.colors(n, palette = pal)
     } else {
       brew <- rev(grDevices::hcl.colors(n, palette = pal))

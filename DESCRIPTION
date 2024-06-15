@@ -30,6 +30,7 @@ Description: Compiles and displays the available data sets regarding the Italian
     'Map', to visualize the output datasets.
 License: GPL (>= 3)
 Encoding: UTF-8
+URL: https://github.com/lcef97/SchoolDataIT
 LazyData: true
 RoxygenNote: 7.2.3
 Imports: 
