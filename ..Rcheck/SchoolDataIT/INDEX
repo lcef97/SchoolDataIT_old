@@ -1,0 +1,61 @@
+Get_AdmUnNames          Download the names and codes of Italian LAU and
+                        NUTS-3 administrative units
+Get_BroadBand           Download the data regarding the broad band
+                        connection activation in Italian schools
+Get_DB_MIUR             Download the database of Italian public schools
+                        buildings
+Get_InnerAreas          Download the classification of peripheral
+                        municipalities
+Get_Invalsi_IS          Download the Invalsi census survey data
+Get_Registry            Download the registry of Italian public schools
+                        from the school registry section
+Get_RiskMap             Download the Map of Risks of Italian
+                        Municipality
+Get_School2mun          Associate a Municipality (LAU) code to each
+                        school
+Get_Shapefile           Download the boundaries of NUTS-3 (Provinces)
+                        and LAU (Municipalities) Italian administrative
+                        units from the ISTAT website
+Get_nstud               Download students' number data
+Get_nteachers_prov      Download the number of teachers in Italian
+                        schools by province
+Group_DB_MIUR           Aggregate the database of Italian public
+                        schools buildings at the municipality and
+                        province level
+Group_nstud             Aggregate the students number data by class at
+                        the municipality and province level
+Group_teachers4stud     Arrange the number of teachers per students in
+                        public Italian schools at the province level
+Map_DB                  Map school data
+Map_Invalsi             Display a map of Invalsi scores
+Map_School_Buildings    Display data fom the school buildings database
+Set_DB                  Build up a comprehensive database regarding the
+                        school system
+Util_Check_nstud_availability
+                        Check how many schools in the school registries
+                        are included in the students count dataframe
+Util_DB_MIUR_num        Convert the raw school buildings data to
+                        numeric or Boolean variables
+Util_Invalsi_filter     Filter the Invalsi data by subject, school
+                        grade and year.
+Util_nstud_wide         Clean the raw dataframe of the number of
+                        students and arrange it in a wide format
+example_AdmUnNames20220630
+                        Subset of the administrative codes of
+                        municipalities
+example_InnerAreas      Subset of the school registry in school year
+                        2022/23
+example_Invalsi23_prov
+                        Subset of the Invalsi scores in school year
+                        2022/23
+example_Prov22_shp      Subset of Italian provinces shapefile
+example_School2mun23    Association of the municipality code to a
+                        subset of public schools 2022/23
+example_input_DB23_MIUR
+                        Subset of the school buildings database in
+                        school year 2022/23
+example_input_Registry23
+                        Subset of the school registry in school year
+                        2022/23
+example_input_nstud23   Subset of the students and classes counts in
+                        school year 2022/23
