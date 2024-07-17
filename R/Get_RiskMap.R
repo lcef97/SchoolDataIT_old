@@ -18,7 +18,7 @@
 #' @source <https://www.istat.it/mappa-rischi/getReport.php>
 #' @return By default, an object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
 #'
-#' @export
+#' @keywords internal
 #'
 #'
 
