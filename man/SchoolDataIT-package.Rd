@@ -8,6 +8,13 @@
 \description{
 Compiles and displays the available data sets regarding the Italian school system, with a focus on the infrastructural aspects. Input datasets are downloaded from the web, with the aim of updating everything to real time. The functions are divided in four main modules, namely 'Get', to scrape raw data from the web 'Util', various utilities needed to process raw data 'Group', to aggregate data at the municipality or province level 'Map', to visualize the output datasets.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/lcef97/SchoolDataIT}
+}
+
+}
 \author{
 \strong{Maintainer}: Leonardo Cefalo \email{leonardo.cefalo@uniba.it} (\href{https://orcid.org/0009-0001-7776-723X}{ORCID})
 

@@ -16,7 +16,7 @@ Map_Invalsi(
   plot = "mapview",
   pal = "Blues",
   WLE = FALSE,
-  col.rev = FALSE,
+  col_rev = FALSE,
   popup_height = 200,
   verbose = TRUE,
   input_shp = NULL,
@@ -57,7 +57,7 @@ By default, \code{c(1,3,5:20)}, i.e. all Italian regions except the provinces of
 
 \item{WLE}{Logical. Whether the variable to chose should be the average WLE score rather that the percentage of sufficient tests, if both are available. \code{FALSE} by default}
 
-\item{col.rev}{Logical. Whether the scale of the colour palette should be reverted or not, if the \code{mapview} mode is chosen. \code{FALSE} by default}
+\item{col_rev}{Logical. Whether the scale of the colour palette should be reverted or not, if the \code{mapview} mode is chosen. \code{FALSE} by default}
 
 \item{popup_height}{Numeric. The height of the popup table in terms of pixels if the \code{"mapview"} mode is chosen. \code{200} by default.}
 

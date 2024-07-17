@@ -31,7 +31,7 @@ Get_AdmUnNames <- function(Year = 2023, date = "01_01", autoAbort = FALSE){
   pattern0 <- "https://raw.githubusercontent.com/lcef97/ISTAT_AdmUnNames/main/ISTAT_AdmUnNames"
   pattern1<- paste0(Year, "_", date, ".CSV")
   if(!date %in% c("01_01", "06_30") || !as.numeric(Year) %in% c(2015:2024)) {
-    message("Please, choose either 01_01 as date and a year between 2015 and 2024")
+    message("Please, choose either 01_01 or 06_30 as date and a year between 2015 and 2024")
     return(NULL)
   }
 

@@ -13,7 +13,6 @@ Set_DB(
   nstud = TRUE,
   nteachers = TRUE,
   BroadBand = TRUE,
-  RiskMap = FALSE,
   verbose = TRUE,
   show_col_types = FALSE,
   Invalsi_subj = c("ELI", "ERE", "ITA", "MAT"),
@@ -46,7 +45,6 @@ Set_DB(
   input_teachers4student = NULL,
   input_nteachers = NULL,
   input_BroadBand = NULL,
-  input_RiskMap = NULL,
   autoAbort = FALSE
 )
 }
@@ -68,8 +66,6 @@ Either \code{"LAU"}/\code{"Municipality"} or \code{"NUTS-3"}/\code{"Province"}. 
 \item{nteachers}{Logical. Whether the number of teachers by province must be included (see \code{link{Get_nteachers_prov}}). \code{TRUE} by default.}
 
 \item{BroadBand}{Logical. Whether the broadband availability in schools must be included (see \code{\link{Get_BroadBand}}). \code{TRUE} by default}
-
-\item{RiskMap}{Logical. Whether the map of risk of Italian municipalities must be included (\code{\link{Get_RiskMap}}). \code{FALSE} by default.}
 
 \item{verbose}{Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.}
 
@@ -160,9 +156,6 @@ If \code{NULL}, it will be downloaded automatically, but not saved in the global
 \item{input_BroadBand}{Object of classs \code{tbl_df}, \code{tbl} and \code{data.frame}. If BroadBand == TRUE, the raw Broadband connection dataset obtaned as output of the function \code{\link{Get_BroadBand}}
 If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default.}
 
-\item{input_RiskMap}{Object of classs \code{tbl_df}, \code{tbl} and \code{data.frame}. If \code{RiskMap == TRUE} and \code{level == "LAU"} (or \code{"Municipality"}), the map of risks of Italian municipalities, obtaned as output of the function \code{\link{Get_RiskMap}}.
-If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default}
-
 \item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
@@ -179,7 +172,6 @@ This function generates a unique dataframe of the school system data including a
 }
 
 
-In addition to these, it is possible to download also the Map of Risks of Italian municipalities, which is a static dataset updated to 2018/01/01 and including several social, geographic and demographic variables (see \code{\link{Get_RiskMap}}.
 To save as much time as possible it is possible to plug in ready-made input data; otherwise they will be downloaded automatically but not saved in the global environment
 When a new dataset is joined to the existing ones, it is possible that some observations in this datasets are missing. In this case, by default, the choice of keeping as much observational units as possible, or to remove units with missing variables is left to the user.
 }
