@@ -95,7 +95,7 @@ Util_DB_MIUR_num <- function(data = NULL, include_numerics = TRUE, include_quali
   if("Building_year" %in% names(data)){
     data <- data %>% dplyr::mutate(
       Building_year = y - suppressWarnings(as.numeric(.data$Building_year))) %>%
-      dplyr::rename(Bulding_age = .data$Building_year)
+      dplyr::rename(Building_age = .data$Building_year)
   }
 
   booleans <- c()

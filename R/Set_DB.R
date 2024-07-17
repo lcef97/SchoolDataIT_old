@@ -10,7 +10,6 @@
 #' }
 #'
 #'
-#' In addition to these, it is possible to download also the Map of Risks of Italian municipalities, which is a static dataset updated to 2018/01/01 and including several social, geographic and demographic variables (see \code{\link{Get_RiskMap}}.
 #' To save as much time as possible it is possible to plug in ready-made input data; otherwise they will be downloaded automatically but not saved in the global environment
 #' When a new dataset is joined to the existing ones, it is possible that some observations in this datasets are missing. In this case, by default, the choice of keeping as much observational units as possible, or to remove units with missing variables is left to the user.
 #'
@@ -27,7 +26,6 @@
 #' @param BroadBand Logical. Whether the broadband availability in schools must be included (see \code{\link{Get_BroadBand}}). \code{TRUE} by default
 #' @param InnerAreas Logical. Whether the percentage of schools belonging to inner/internal areas must be included (see \code{\link{Get_InnerAreas}}). TRUE by default.
 #' @param ord_InnerAreas Logical. If \code{check == TRUE} and \code{InnerAreas == TRUE}, whether the Inner areas classification should be treated as an ordinal variable rather than as a categorical one (see \code{\link{Get_InnerAreas}} for the classification). \code{FALSE} by default.
-#' @param RiskMap Logical. Whether the map of risk of Italian municipalities must be included (\code{\link{Get_RiskMap}}). \code{FALSE} by default.
 #' @param Invalsi_subj Character. If \code{Invalsi == TRUE}, the school subject(s) to include, among \code{"Englis_listening"}/\code{"ELI"}, \code{"English_reading"}/\code{"ERE"}, \code{"Italian"}/\code{"Ita"} and \code{"Mathematics"}/\code{"MAT"}. All four by default.
 #' @param Invalsi_grade Numeric. If \code{Invalsi == TRUE}, the educational grade to choose. Either \code{2} (2nd year of primary school), \code{5} (last year of primary school), \code{8} (last year of middle shcool), \code{10} (2nd year of high school) or \code{13} (last year of school). All by default.
 #' @param Invalsi_WLE Logical. Whether to express Invalsi scores as averagev WLE score rather that the percentage of sufficient tests, if both are Invalsi_grade is either or \code{2} \code{5}. \code{FALSE} by default
@@ -84,8 +82,6 @@
 #' \code{NULL} by default.
 #' @param input_BroadBand Object of classs \code{tbl_df}, \code{tbl} and \code{data.frame}. If BroadBand == TRUE, the raw Broadband connection dataset obtaned as output of the function \code{\link{Get_BroadBand}}
 #' If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default.
-#' @param input_RiskMap Object of classs \code{tbl_df}, \code{tbl} and \code{data.frame}. If \code{RiskMap == TRUE} and \code{level == "LAU"} (or \code{"Municipality"}), the map of risks of Italian municipalities, obtaned as output of the function \code{\link{Get_RiskMap}}.
-#' If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default
 #'
 #' @seealso \code{\link{Util_DB_MIUR_num}}, \code{\link{Group_DB_MIUR}}, \code{\link{Group_nstud}}, \code{\link{Util_Check_nstud_availability}}, \code{\link{Get_School2mun}}
 #' for similar arguments.
@@ -127,7 +123,6 @@ Set_DB <- function( Year = 2023,
                     nstud = TRUE,
                     nteachers = TRUE,
                     BroadBand = TRUE,
-                    RiskMap = FALSE,
                     verbose = TRUE,
                     show_col_types = FALSE,
                     Invalsi_subj = c("ELI", "ERE", "ITA", "MAT"),
@@ -160,7 +155,6 @@ Set_DB <- function( Year = 2023,
                     input_teachers4student = NULL,
                     input_nteachers = NULL,
                     input_BroadBand = NULL,
-                    input_RiskMap = NULL,
                     autoAbort = FALSE){
 
   start.zero <- Sys.time()
@@ -197,7 +191,7 @@ Set_DB <- function( Year = 2023,
         Year = ifelse(any(year.patternA(Year) %in% c(
           year.patternA(2016), year.patternA(2018))), Year, YearMinus1),
         date = ifelse(any(year.patternA(Year) %in%c(
-          year.patternA(2016), year.patternA(2018))), "01_01_", "30_06_"), autoAbort = autoAbort)
+          year.patternA(2016), year.patternA(2018))), "01_01", "30_06"), autoAbort = autoAbort)
       if(is.null(input_AdmUnNames)){
         if(!autoAbort){
           holdOn <- ""
@@ -364,25 +358,6 @@ Set_DB <- function( Year = 2023,
     }
   }
 
-  while(RiskMap && is.null(input_RiskMap) && level %in% c("LAU", "Municipality")){
-    input_RiskMap <- Get_RiskMap(verbose = verbose, metadata = FALSE, autoAbort = autoAbort)
-    if(is.null(input_RiskMap)){
-      if(!autoAbort){
-        holdOn <- ""
-        message("Error during risk map retrieving. Would you abort this element or retry? \n",
-                "    - To abort the element, press `A` \n",
-                "    - To retry data retrieving, press any other key \n")
-        holdOn <- readline(prompt = "    ")
-        if(toupper(holdOn) == "A"){
-          cat("You chose to abort the operation \n")
-          RiskMap <- FALSE
-        } else {
-          cat("You chose to retry \n")
-        }
-      } else RiskMap <- FALSE
-    }
-  }
-
   if(verbose) cat("\n")
 
   if(! conservative){
@@ -527,27 +502,6 @@ Set_DB <- function( Year = 2023,
     }
   }
 
-  if(!is.null(input_RiskMap)){
-    datasets[["RiskMap"]] <- input_RiskMap %>%
-      dplyr::select(-.data$Data_rif, -.data$Id_territorio_ind,
-                    -.data$Region_code, -.data$Region_description,
-                    -.data$Region_description, -.data$Province_description,
-                    -.data$Municipality_description) %>%
-      dplyr::mutate(Province_code = as.numeric(.data$Province_code))
-
-    for (j in (3:ncol(datasets$RiskMap))){
-      if(grepl("[A-Za-z]", substr(names(datasets$RiskMap)[j],
-                                  nchar(names(datasets$RiskMap)[j])-3,
-                                  nchar(names(datasets$RiskMap)[j]) ) )) {
-        names(datasets$RiskMap)[j] <- paste0(names(datasets$RiskMap)[j], "_2018")
-      }
-    }
-
-    if(verbose && year.patternA(Year) != "201718"){
-      message("Risk map is updated to 01/01/2018")
-    }
-  }
-
   if(!is.null(input_Invalsi_IS)){
 
     Invalsi_IS <- Util_Invalsi_filter(data = input_Invalsi_IS,
@@ -612,9 +566,9 @@ Set_DB <- function( Year = 2023,
 
   datasets <- list(datasets$Registry, datasets$Invalsi_IS, datasets$SchoolBuildings,
                    datasets$nstud, datasets$BroadBand, datasets$teachers4student,
-                   datasets$nteachers, datasets$RiskMap)
+                   datasets$nteachers)
   names(datasets) <- c("Registry", "Invalsi_IS", "SchoolBuildings", "nstud", "BroadBand",
-                       "teachers4student", "nteachers", "RiskMap")
+                       "teachers4student", "nteachers")
   datasets <- Filter(Negate(is.null), datasets)
 
   if(level %in% c("LAU", "Municipality")){
