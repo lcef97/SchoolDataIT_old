@@ -22,13 +22,4 @@ By default, an object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
 \description{
 This functions downloads a broad set of indicators covering several categories of risks to which Italian municipalities are exposed. It includes mostly geographical, demographic and urbanistic information. The dataset is static and it dates back to Jan 1st 2018.
 }
-\examples{
-
-
-
-\donttest{
-  Get_RiskMap(autoAbort = TRUE)[-c(1:5)]
-}
-
-}
 \keyword{internal}

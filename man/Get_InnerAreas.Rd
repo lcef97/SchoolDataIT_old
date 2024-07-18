@@ -4,7 +4,7 @@
 \alias{Get_InnerAreas}
 \title{Download the classification of peripheral municipalities}
 \source{
-<https://www.istat.it/it/archivio/273176>
+<https://www.istat.it/notizia/la-geografia-delle-aree-interne-nel-2020-vasti-territori-tra-potenzialita-e-debolezze/>
 }
 \usage{
 Get_InnerAreas(autoAbort = FALSE)

@@ -34,7 +34,7 @@
 #'
 #' InnerAreas[, c(1,9,13)]
 #'
-#' @source  <https://www.istat.it/it/archivio/273176>
+#' @source  <https://www.istat.it/notizia/la-geografia-delle-aree-interne-nel-2020-vasti-territori-tra-potenzialita-e-debolezze/>
 #'
 #'
 #'
@@ -47,7 +47,7 @@ Get_InnerAreas <- function(autoAbort = FALSE){
 
   starttime <- Sys.time()
 
-  home.ISTAT <-"https://www.istat.it/it/archivio/273176"
+  home.ISTAT <-"https://www.istat.it/notizia/la-geografia-delle-aree-interne-nel-2020-vasti-territori-tra-potenzialita-e-debolezze/"
   homepage <- NULL
   attempt <- 0
   while(is.null(homepage) && attempt <= 10){

@@ -11,9 +11,7 @@
 #'
 #'
 #'
-#' \donttest{
-#'   Get_RiskMap(autoAbort = TRUE)[-c(1:5)]
-#' }
+#'
 #'
 #' @source <https://www.istat.it/mappa-rischi/getReport.php>
 #' @return By default, an object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
