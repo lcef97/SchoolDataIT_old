@@ -1,4 +1,4 @@
-# Version 0.1.3
+# Version 0.2.0
 ## Package overview
 
 Compiles and displays the available data sets regarding the Italian school system, with a focus on the infrastructural aspects.
